@@ -1,4 +1,4 @@
-package	syslog
+package	syslog5424	// import "github.com/nathanaelle/syslog5424"
 
 
 import	(
@@ -36,6 +36,4 @@ func task_logger(pipeline <-chan message, output io.Writer)  {
 				output.Write([]byte(msg))
 		}
 	}
-
-
 }
