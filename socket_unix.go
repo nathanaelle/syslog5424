@@ -1,11 +1,9 @@
-package	syslog5424	// import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
-import	(
-	"net"
+import (
 	"errors"
+	"net"
 )
-
-
 
 // unixSyslog opens a connection to the syslog daemon running on the
 // local machine using a Unix domain socket.
@@ -23,7 +21,6 @@ func Local() (conn net.Conn) {
 	}
 	return nil
 }
-
 
 // TODO
 func Remote() (conn net.Conn, err error) {
