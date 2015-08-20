@@ -4,15 +4,24 @@ import (
 	"testing"
 )
 
-type origin map[string][]string
+type (
+	testType map[string][]string
 
-type timeQuality struct {
-	TzKnown      *int `sd5424:"tzKnown"`
-	IsSynced     *int `sd5424:"isSynced"`
-	SyncAccuracy *int `sd5424:"syncAccuracy"`
-}
+	origin map[string][]string
 
-type exampleSDID map[string]string
+	exampleSDID map[string]string
+
+	timeQuality struct {
+		TzKnown      *int `sd5424:"tzKnown"`
+		IsSynced     *int `sd5424:"isSynced"`
+		SyncAccuracy *int `sd5424:"syncAccuracy"`
+	}
+
+	SDTest struct {
+		asc string
+		obj interface{}
+	}
+)
 
 func (exampleSDID) GetPEN() uint64 {
 	return uint64(32473)
@@ -27,12 +36,7 @@ func pint(a int) *int {
 	return p
 }
 
-type SDTest struct {
-	asc string
-	obj interface{}
-}
-
-var l_val []SDTest = []SDTest{
+var sd_t []SDTest = []SDTest{
 	SDTest{
 		`[exampleSDID@32473 eventID="1011" eventSource="Application" iut="3"]`,
 		exampleSDID{"iut": "3", "eventSource": "Application", "eventID": "1011"},
@@ -64,7 +68,7 @@ var l_val []SDTest = []SDTest{
 }
 
 func Test_SDMarshal(t *testing.T) {
-	for _, val := range l_val {
+	for _, val := range sd_t {
 		d := string(MarshalSD(val.obj))
 		if d != val.asc {
 			t.Errorf("%v [%v] differs", val.asc, d)
@@ -74,17 +78,27 @@ func Test_SDMarshal(t *testing.T) {
 
 func Test_SDUnmarshal(t *testing.T) {
 	t.Skip()
-	/*	l_inval	:= []string{
-			`[ exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`,
-			`[ exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"]`,
-			`[exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] [examplePriority@32473 class="high"]`,
-		}
 
-		for _,inv := range l_inval {
-			err	:= d.Set(inv)
-			if err == nil {
-				t.Errorf("[%v] parser invalid", inv)
-			}
+	l_inval := []string{
+		`[ exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`,
+		`[exampleSDID iut="3" eventSource="Application" eventID="1011"]`,
+	}
+
+	test := new(testType)
+	for _, inv := range l_inval {
+		err := UnmarshalSD([]byte(inv), test)
+		if err == nil {
+			t.Errorf("[%v] parser invalid", inv)
 		}
-	*/
+	}
+
+}
+
+func Benchmark_SDMarshal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		/*for _, tt := range messageTest {
+			tt.m.String()
+		}*/
+		MarshalSD(sd_t[0].obj)
+	}
 }

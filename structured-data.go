@@ -9,14 +9,7 @@ import (
 //	http://www.iana.org/assignments/syslog-parameters/syslog-parameters.xhtml#syslog-parameters-4
 
 type (
-	listStructuredData []StructuredData
-
-	StructuredData interface {
-		Get() interface{}
-		Set(string) error
-		SDMarshaler
-		SDUnmarshaler
-	}
+	listStructuredData []interface{}
 
 	SDUnmarshaler interface {
 		Unmarshal5424([]byte) error
@@ -36,11 +29,16 @@ var (
 	marshalerType   = reflect.TypeOf(new(SDMarshaler)).Elem()
 	unmarshalerType = reflect.TypeOf(new(SDUnmarshaler)).Elem()
 	sdpenType       = reflect.TypeOf(new(SDPEN)).Elem()
-	emptyListSD     = listStructuredData([]StructuredData{})
+	emptyListSD     = listStructuredData([]interface{}{})
 )
 
+func (listSD listStructuredData) Add(data interface{}) listStructuredData {
+	return listStructuredData(append([]interface{}(listSD), data))
+
+}
+
 func (listSD listStructuredData) String() string {
-	list := []StructuredData(listSD)
+	list := []interface{}(listSD)
 
 	if len(list) == 0 {
 		return "-"

@@ -1,7 +1,6 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -64,48 +63,99 @@ func epoc_to_ts(s_sec string, s_nsec string) time.Time {
 	return time.Unix(sec, nsec)
 }
 
+// set the date of a Message with a epoch TimeStamp
 func (msg Message) Epoch(s_sec string, s_nsec string) Message {
 	return Message{msg.prio, epoc_to_ts(s_sec, s_nsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD, msg.message}
 }
 
+// set the app-name of a Message
 func (msg Message) App(appname string) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, appname, msg.procid, msg.msgid, msg.SD, msg.message}
 }
 
+// set the proc-id of a Message
 func (msg Message) ProcID(procid string) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, procid, msg.msgid, msg.SD, msg.message}
 }
 
+// set the msg-id of a Message
 func (msg Message) MsgID(msgid string) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msgid, msg.SD, msg.message}
 }
 
+// set the priority of a Message
 func (msg Message) Priority(prio Priority) Message {
 	return Message{prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD, msg.message}
 }
 
+//set the hostname as the value get with gethostbyname()
 func (msg Message) LocalHost() Message {
 	return Message{msg.prio, msg.timestamp, hostname, msg.appname, msg.procid, msg.msgid, msg.SD, msg.message}
 }
 
-func (msg Message) Data(data string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD, data}
+//set the message part of a Message
+func (msg Message) Msg(message string) Message {
+	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD, message}
+}
+
+//set the message part of a Message
+func (msg Message) StructuredData(data string) Message {
+	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD.Add(data), msg.message}
 }
 
 func (msg Message) String() string {
+	var ret []byte
+	prio := strconv.Itoa(int(msg.prio))
+	ts := msg.timestamp.Format(RFC5424TimeStamp)
+	sd := msg.SD.String()
 	switch msg.message {
 	case "":
-		return fmt.Sprintf("<%v>1 %s %s %s %s %s %v",
-			msg.prio, msg.timestamp.Format(RFC5424TimeStamp), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD)
+		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appname) + len(msg.procid) + len(msg.msgid)
+		l += len(sd)
+		l += 9
+
+		ret = make([]byte, 0, l)
+		ret = append(ret, '<')
+		ret = append(ret, []byte(prio)...)
+		ret = append(ret, []byte{'>', '1', ' '}...)
+		ret = append(ret, []byte(ts)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.hostname)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.appname)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.procid)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.msgid)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(sd)...)
 
 	default:
-		return fmt.Sprintf("<%v>1 %s %s %s %s %s %v %s",
-			msg.prio, msg.timestamp.Format(RFC5424TimeStamp), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.SD, msg.message)
+		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appname) + len(msg.procid) + len(msg.msgid)
+		l += len(sd) + len(msg.message)
+		l += 10
 
+		ret = make([]byte, 0, l)
+		ret = append(ret, '<')
+		ret = append(ret, []byte(prio)...)
+		ret = append(ret, []byte{'>', '1', ' '}...)
+		ret = append(ret, []byte(ts)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.hostname)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.appname)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.procid)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.msgid)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(sd)...)
+		ret = append(ret, ' ')
+		ret = append(ret, []byte(msg.message)...)
 	}
-
+	return string(ret)
 }
 
-func CreateMessage(data string, appname string, prio Priority) Message {
-	return EmptyMessage().App(appname).Priority(prio).LocalHost().Now().Data(data)
+func CreateMessage(appname string, prio Priority, message string) Message {
+	return EmptyMessage().App(appname).Priority(prio).LocalHost().Now().Msg(message)
 }
