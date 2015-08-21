@@ -4,26 +4,33 @@
 
 ```
 import	(
-	"os"
 	"github.com/nathanaelle/syslog5424"
 )
 
+type someSD struct{
+	Message string
+	Errno int
+}
+
 func main() {
+	sl_conn:= syslog5424.Dial( "stdio", "stderr", syslog5424.T_LFENDED, -1 )
+	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test app" )
 
-	syslog := syslog5424.New( os.Stderr, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test app" )
+	conflog := syslog.SubSyslog( "configuration" )
 
-	conflog := syslog.SubSyslog("configuration")
+	logger_info_conf := conflog.Channel( syslog5424.LOG_INFO ).Logger( "INFO : " )
+	logger_err_conf := conflog.Channel( syslog5424.LOG_ERR ).Logger( "ERR : " )
 
-	logger_info_conf := conflog.Channel(syslog5424.LOG_INFO).Logger("")
-	logger_error_conf := conflog.Channel(syslog5424.LOG_ERR).Logger("ERROR :")
+	logger_info_conf.Print( "doing some stuff" )
 
-	logger_info_conf.Print("doing some stuff")
-	logger_error_conf.Printf("%#v", struct{ message string, errno int }{ "some message", 42 })
+	logger_err_conf.Print( "doing some stuff" )
 
-	conflog.Channel(syslog5424.LOG_INFO).Log("another message", )
+	conflog.Channel(syslog5424.LOG_ERR).Log( "another message", someSD{ "some message", 42 } )
 }
 
 ```
+
+see [example_syslog_test.go](example_syslog_test.go) for a functionnal example.
 
 ## What is Syslog5424 ?
 
@@ -47,11 +54,11 @@ So This is a very pertinent way to mix *metrics* and *keywords* and human readin
   * [ ] Decoding RFC 5424 Message
   * [x] Handling multi channels
   * [x] Dial to a local unixdgram syslog server
-  * [ ] Dial to a TCP remote syslog server
+  * [x] Dial to a TCP remote syslog server
   * [ ] Dial to a TLS remote syslog server
   * [x] Unix Datagram Transport
-  * [ ] LF separated transport
-  * [ ] RFC 5426 Transport
+  * [x] LF separated transport
+  * [x] RFC 5426 Transport
 
 ## License
 2-Clause BSD

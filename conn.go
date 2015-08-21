@@ -33,7 +33,7 @@ type (
 	}
 
 	fd_conn struct {
-		pipeline chan Message
+		pipeline chan<- Message
 		conn     io.WriteCloser
 	}
 )
@@ -101,16 +101,20 @@ func task_logger(pipeline <-chan Message, output Conn, encode func([]byte) []byt
 // Dial opens a connection to the syslog daemon
 // network can be "local", "unixgram", "tcp", "tcp4", "tcp6"
 func Dial(network, address string, t Transport, queue_len int) Conn {
+	var pipeline chan Message
 	var c Conn
 
-	if queue_len < 100 {
-		queue_len = 100
+	switch queue_len < 0 {
+	case true:
+		pipeline = make(chan Message)
+
+	case false:
+		pipeline = make(chan Message, queue_len)
 	}
-	pipeline := make(chan Message, queue_len)
 
 	switch network {
-	case "stderr":
-		c = stderr_dial("", pipeline)
+	case "stdio":
+		c = stdio_dial(address, pipeline)
 
 	case "local", "unixgram":
 		c = local_dial(address, pipeline)
@@ -121,7 +125,9 @@ func Dial(network, address string, t Transport, queue_len int) Conn {
 		return nil
 	}
 
-	go task_logger(pipeline, c, t.Encoder())
+	if c != nil {
+		go task_logger(pipeline, c, t.Encoder())
+	}
 
 	return c
 }
@@ -149,11 +155,20 @@ func TLSDial(network, address string, t Transport, o tls.Config) Conn {
 }
 
 // dialer that only forward to stderr
-func stderr_dial(_ string, pipeline chan Message) Conn {
-	return &fd_conn{
-		pipeline: pipeline,
-		conn:     os.Stderr,
+func stdio_dial(addr string, pipeline chan Message) Conn {
+	switch addr {
+	case "stderr":
+		return &fd_conn{
+			pipeline: pipeline,
+			conn:     os.Stderr,
+		}
+	case "stdout":
+		return &fd_conn{
+			pipeline: pipeline,
+			conn:     os.Stdout,
+		}
 	}
+	return nil
 }
 
 // dialer that forward to a local RFC5424 syslog receiver

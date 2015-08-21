@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+var (
+	Now func() time.Time = time.Now
+)
+
 type (
 	Channel interface {
 		io.Writer
@@ -31,12 +35,6 @@ type (
 
 	trueChannel struct {
 		msgChannel
-		priority Priority
-		hostname string
-		pid      string
-		appname  string
-		msgid    string
-		output   Conn
 	}
 )
 
@@ -50,14 +48,14 @@ func (d *trueChannel) AppName(sup string) Channel {
 		appname = d.appname + "/" + sup
 	}
 
-	return &trueChannel{
+	return &trueChannel{msgChannel{
 		priority: d.priority,
 		hostname: d.hostname,
 		pid:      d.pid,
 		appname:  appname,
 		msgid:    d.msgid,
 		output:   d.output,
-	}
+	}}
 }
 
 func (d *trueChannel) Msgid(msgid string) Channel {
@@ -85,16 +83,16 @@ func (d *msgChannel) IsDevNull() bool {
 }
 
 func (c *msgChannel) Write(d []byte) (int, error) {
-	c.output.Send(Message{c.priority, time.Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
+	c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
 	return len(d), nil
 }
 
 func (c *msgChannel) Log(d string, sd ...interface{}) {
 	switch len(sd) {
 	case 0:
-		c.output.Send(Message{c.priority, time.Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
+		c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
 	default:
-		c.output.Send(Message{c.priority, time.Now(), c.hostname, c.appname, c.pid, c.msgid, listStructuredData(sd), string(d)})
+		c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, listStructuredData(sd), string(d)})
 	}
 }
 

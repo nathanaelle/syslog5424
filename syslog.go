@@ -11,7 +11,6 @@ var (
 )
 
 type Syslog struct {
-	devnull  *devnull
 	facility Priority
 	hostname string
 	pid      string
@@ -21,7 +20,7 @@ type Syslog struct {
 	min_sev  int
 }
 
-func New(out Conn, min_priority *Priority, appname string) (syslog *Syslog, err error) {
+func New(output Conn, min_priority Priority, appname string) (syslog *Syslog, err error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "-"
@@ -33,12 +32,11 @@ func New(out Conn, min_priority *Priority, appname string) (syslog *Syslog, err 
 	}
 
 	syslog = &Syslog{
-		devnull:  new(devnull),
 		facility: min_priority.Facility(),
 		hostname: hostname,
 		pid:      strconv.Itoa(os.Getpid()),
 		appname:  appname,
-		output:   out,
+		output:   output,
 		min_sev:  int(min_priority.Severity()),
 	}
 
@@ -47,24 +45,27 @@ func New(out Conn, min_priority *Priority, appname string) (syslog *Syslog, err 
 	}
 
 	syslog.channels = []Channel{
-		syslog.devnull, syslog.devnull,
-		syslog.devnull, syslog.devnull,
-		syslog.devnull, syslog.devnull,
-		syslog.devnull, syslog.devnull,
+		devNull, devNull, devNull, devNull,
+		devNull, devNull, devNull, devNull,
 	}
 
 	for sev := 0; sev <= syslog.min_sev; sev++ {
-		syslog.channels[sev] = &trueChannel{
+		syslog.channels[sev] = &trueChannel{msgChannel{
 			priority: syslog.facility | Priority(sev),
 			hostname: hostname,
 			pid:      syslog.pid,
 			appname:  appname,
 			msgid:    "-",
-			output:   syslog.output,
-		}
+			output:   output,
+		}}
 	}
 
 	return syslog, nil
+}
+
+func (syslog *Syslog) TestMode() {
+	syslog.hostname = "localhost"
+	syslog.pid = "1234"
 }
 
 func (syslog *Syslog) Channel(sev Priority) Channel {
@@ -82,30 +83,27 @@ func (syslog *Syslog) SubSyslog(sub_appname string) (sub *Syslog) {
 	}
 
 	sub = &Syslog{
-		devnull:  syslog.devnull,
 		facility: syslog.facility,
 		hostname: syslog.hostname,
 		pid:      syslog.pid,
 		appname:  appname,
 		output:   syslog.output,
 		channels: []Channel{
-			syslog.devnull, syslog.devnull,
-			syslog.devnull, syslog.devnull,
-			syslog.devnull, syslog.devnull,
-			syslog.devnull, syslog.devnull,
+			devNull, devNull, devNull, devNull,
+			devNull, devNull, devNull, devNull,
 		},
 		min_sev: syslog.min_sev,
 	}
 
 	for sev := 0; sev <= syslog.min_sev; sev++ {
-		sub.channels[sev] = &trueChannel{
+		sub.channels[sev] = &trueChannel{msgChannel{
 			priority: syslog.facility | Priority(sev),
 			hostname: syslog.hostname,
 			pid:      syslog.pid,
 			appname:  appname,
 			msgid:    "-",
 			output:   syslog.output,
-		}
+		}}
 	}
 
 	return
