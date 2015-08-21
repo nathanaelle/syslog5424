@@ -9,6 +9,7 @@ import	(
 )
 
 func main() {
+
 	syslog := syslog5424.New( os.Stderr, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test app" )
 
 	conflog := syslog.SubSyslog("configuration")
@@ -17,7 +18,9 @@ func main() {
 	logger_error_conf := conflog.Channel(syslog5424.LOG_ERR).Logger("ERROR :")
 
 	logger_info_conf.Print("doing some stuff")
-	logger_error_conf.Printf("%#v", struct{ message string, errno int }{ "evil message", 666 })
+	logger_error_conf.Printf("%#v", struct{ message string, errno int }{ "some message", 42 })
+
+	conflog.Channel(syslog5424.LOG_INFO).Log("another message", )
 }
 
 ```
@@ -37,19 +40,24 @@ So This is a very pertinent way to mix *metrics* and *keywords* and human readin
 
 ## Features
 
-  * Dial to local or remote syslog server
-  * Elegant (for me) handling with multi channel
-  * Structured Data (TODO)
-
+  * [x] Encoding Structured Data
+  * [x] Encoding RFC 5424 Message
+  * [x] Encoding Private Structured Data
+  * [ ] Decoding Structured Data
+  * [ ] Decoding RFC 5424 Message
+  * [x] Handling multi channels
+  * [x] Dial to a local unixdgram syslog server
+  * [ ] Dial to a TCP remote syslog server
+  * [ ] Dial to a TLS remote syslog server
+  * [x] Unix Datagram Transport
+  * [ ] LF separated transport
+  * [ ] RFC 5426 Transport
 
 ## License
 2-Clause BSD
 
 ## Todo
 
-  * Write documentation
+  * Write documentation [http://godoc.org/github.com/nathanaelle/syslog5424](http://godoc.org/github.com/nathanaelle/syslog5424)
   * Write comments
   * Clean some ugly stuff
-  * Structured Data
-  * Correct handling of TLS / DTLS remote peer
-  * Correct handling deconnection of remote peer

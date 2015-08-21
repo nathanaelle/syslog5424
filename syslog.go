@@ -2,9 +2,12 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
 	"errors"
-	"io"
 	"os"
 	"strconv"
+)
+
+var (
+	devNull *devnull = new(devnull)
 )
 
 type Syslog struct {
@@ -14,11 +17,11 @@ type Syslog struct {
 	pid      string
 	appname  string
 	channels []Channel
-	output   chan message
+	output   Conn
 	min_sev  int
 }
 
-func New(out io.Writer, min_priority *Priority, appname string) (syslog *Syslog, err error) {
+func New(out Conn, min_priority *Priority, appname string) (syslog *Syslog, err error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "-"
@@ -35,7 +38,7 @@ func New(out io.Writer, min_priority *Priority, appname string) (syslog *Syslog,
 		hostname: hostname,
 		pid:      strconv.Itoa(os.Getpid()),
 		appname:  appname,
-		output:   make(chan message, 100),
+		output:   out,
 		min_sev:  int(min_priority.Severity()),
 	}
 
@@ -60,8 +63,6 @@ func New(out io.Writer, min_priority *Priority, appname string) (syslog *Syslog,
 			output:   syslog.output,
 		}
 	}
-
-	go task_logger(syslog.output, out)
 
 	return syslog, nil
 }

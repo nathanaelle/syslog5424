@@ -69,7 +69,7 @@ func (msg Message) Epoch(s_sec string, s_nsec string) Message {
 }
 
 // set the app-name of a Message
-func (msg Message) App(appname string) Message {
+func (msg Message) AppName(appname string) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
@@ -103,7 +103,7 @@ func (msg Message) StructuredData(data string) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd.Add(data), msg.message}
 }
 
-func (msg Message) String() string {
+func (msg Message) Marshal5424() []byte {
 	var ret []byte
 	prio := strconv.Itoa(int(msg.prio))
 	ts := msg.timestamp.Format(RFC5424TimeStamp)
@@ -153,9 +153,13 @@ func (msg Message) String() string {
 		ret = append(ret, ' ')
 		ret = append(ret, []byte(msg.message)...)
 	}
-	return string(ret)
+	return ret
+}
+
+func (msg Message) String() string {
+	return string(msg.Marshal5424())
 }
 
 func CreateMessage(appname string, prio Priority, message string) Message {
-	return EmptyMessage().App(appname).Priority(prio).LocalHost().Now().Msg(message)
+	return EmptyMessage().AppName(appname).Priority(prio).LocalHost().Now().Msg(message)
 }

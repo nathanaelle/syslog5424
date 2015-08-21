@@ -3,43 +3,42 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 import (
 	"io"
 	"log"
+	"time"
 )
 
-type Channel interface {
-	io.Writer
-	IsDevNull() bool
-	AppName(string) Channel
-	Msgid(string) Channel
-	Logger(prefix string) *log.Logger
-}
-
-type trueChannel struct {
-	priority Priority
-	hostname string
-	pid      string
-	appname  string
-	msgid    string
-	output   chan<- message
-}
-
-func (d *trueChannel) Logger(prefix string) *log.Logger {
-	switch d.priority.Severity() {
-	case LOG_DEBUG:
-		return log.New(d, prefix, log.Lshortfile)
-	default:
-		return log.New(d, prefix, 0)
+type (
+	Channel interface {
+		io.Writer
+		IsDevNull() bool
+		AppName(string) Channel
+		Msgid(string) Channel
+		Logger(string) *log.Logger
+		Log(string, ...interface{})
 	}
-}
 
-func (d *trueChannel) IsDevNull() bool {
-	return false
-}
+	devnull struct {
+	}
 
-func (c *trueChannel) Write(d []byte) (int, error) {
-	c.output <- build_message(c.priority, c.hostname, c.appname, c.pid, c.msgid, string(d))
+	msgChannel struct {
+		devnull
+		priority Priority
+		hostname string
+		pid      string
+		appname  string
+		msgid    string
+		output   Conn
+	}
 
-	return len(d), nil
-}
+	trueChannel struct {
+		msgChannel
+		priority Priority
+		hostname string
+		pid      string
+		appname  string
+		msgid    string
+		output   Conn
+	}
+)
 
 func (d *trueChannel) AppName(sup string) Channel {
 	var appname string
@@ -72,16 +71,6 @@ func (d *trueChannel) Msgid(msgid string) Channel {
 	}
 }
 
-type msgChannel struct {
-	priority Priority
-	hostname string
-	pid      string
-	appname  string
-	msgid    string
-
-	output chan<- message
-}
-
 func (d *msgChannel) Logger(prefix string) *log.Logger {
 	switch d.priority.Severity() {
 	case LOG_DEBUG:
@@ -91,29 +80,26 @@ func (d *msgChannel) Logger(prefix string) *log.Logger {
 	}
 }
 
-func (d *msgChannel) AppName(string) Channel {
-	return d
-}
-
-func (d *msgChannel) Msgid(string) Channel {
-	return d
-}
-
 func (d *msgChannel) IsDevNull() bool {
 	return false
 }
 
 func (c *msgChannel) Write(d []byte) (int, error) {
-	c.output <- build_message(c.priority, c.hostname, c.appname, c.pid, c.msgid, string(d))
-
+	c.output.Send(Message{c.priority, time.Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
 	return len(d), nil
 }
 
-type devnull struct {
+func (c *msgChannel) Log(d string, sd ...interface{}) {
+	switch len(sd) {
+	case 0:
+		c.output.Send(Message{c.priority, time.Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
+	default:
+		c.output.Send(Message{c.priority, time.Now(), c.hostname, c.appname, c.pid, c.msgid, listStructuredData(sd), string(d)})
+	}
 }
 
 func (d *devnull) Logger(prefix string) *log.Logger {
-	return log.New(d, prefix, log.Lshortfile)
+	return log.New(d, prefix, 0)
 }
 
 func (dn *devnull) IsDevNull() bool {
@@ -130,4 +116,7 @@ func (dn *devnull) Msgid(string) Channel {
 
 func (dn *devnull) Write(d []byte) (int, error) {
 	return len(d), nil
+}
+
+func (dn *devnull) Log(_ string, _ ...interface{}) {
 }
