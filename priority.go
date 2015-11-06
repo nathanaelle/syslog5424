@@ -2,7 +2,6 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
 	"errors"
-	"strconv"
 )
 
 type Priority int
@@ -130,6 +129,49 @@ func (p *Priority) String() string {
 	return facility_string[p.Facility()>>3] + "." + severity_string[p.Severity()]
 }
 
-func (p *Priority) MarshallSyslog() string {
-	return "<" + strconv.Itoa(int(*p)) + ">1"
+func (p *Priority) Marshal5424() []byte {
+	u	:= byte(int(*p) %10)
+	d	:= byte(int(*p) %100 - (int(*p)%10))
+	c	:= byte(int(*p) - (int(*p)%100))
+	d	/= 10
+	c	/= 100
+
+	if c > 0 {
+		return []byte{ '<', c+'0', d+'0', u+'0', '>', '1' }
+	}
+	if d > 0 {
+		return []byte{ '<', d+'0', u+'0', '>', '1' }
+	}
+	return []byte{ '<', u+'0', '>', '1' }
+}
+
+
+func (p *Priority) Unmarshal5424(d []byte) error {
+	s := len(d)
+	if s < 4 {
+		return errors.New("bad format : "+string(d))
+	}
+	if s > 6 {
+		return errors.New("bad format : "+string(d))
+	}
+	if d[0] != '<' {
+		return errors.New("bad format : "+string(d))
+	}
+	if d[s-1] != '1' {
+		return errors.New("bad format : "+string(d))
+	}
+	if d[s-2] != '>' {
+		return errors.New("bad format : "+string(d))
+	}
+	b := d[1:s-2]
+	t_p := int(0)
+	for _,v := range b {
+		if v< '0' || v > '9' {
+			return errors.New("bad format : "+string(d))
+		}
+		t_p = t_p * 10+int(v-'0')
+	}
+	*p = Priority(t_p)
+
+	return nil
 }

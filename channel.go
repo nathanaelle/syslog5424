@@ -41,11 +41,11 @@ type (
 func (d *trueChannel) AppName(sup string) Channel {
 	var appname string
 
-	switch d.appname {
+	switch string(d.appname) {
 	case "-":
 		appname = sup
 	default:
-		appname = d.appname + "/" + sup
+		appname = d.appname +"/"+ sup
 	}
 
 	return &trueChannel{msgChannel{
@@ -83,16 +83,16 @@ func (d *msgChannel) IsDevNull() bool {
 }
 
 func (c *msgChannel) Write(d []byte) (int, error) {
-	c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
+	c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d) })
 	return len(d), nil
 }
 
 func (c *msgChannel) Log(d string, sd ...interface{}) {
 	switch len(sd) {
 	case 0:
-		c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d)})
+		c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, emptyListSD, string(d) })
 	default:
-		c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, listStructuredData(sd), string(d)})
+		c.output.Send(Message{c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, listStructuredData(sd), string(d) })
 	}
 }
 

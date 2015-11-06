@@ -1,6 +1,7 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -40,5 +41,19 @@ func Test_Priority(t *testing.T) {
 		if val.a != d.String() {
 			t.Errorf("[%v] [%v] differs", val.a, d)
 		}
+	}
+}
+
+func Test_Priority_Marshal5424(t *testing.T) {
+	i	:= int(0)
+
+	for i < 256 {
+		z :=Priority(i)
+		a := string(z.Marshal5424())
+		b := fmt.Sprintf("<%d>1", i)
+		if a != b {
+			t.Errorf("m[%v] f[%v] differs", a, b)
+		}
+		i++
 	}
 }

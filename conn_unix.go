@@ -1,4 +1,5 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
+// +build linux freebsd netbsd openbsd dragonfly
 
 import (
 	"errors"

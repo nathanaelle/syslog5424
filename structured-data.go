@@ -37,20 +37,32 @@ func (listSD listStructuredData) Add(data interface{}) listStructuredData {
 
 }
 
-func (listSD listStructuredData) String() string {
-	list := []interface{}(listSD)
-
-	if len(list) == 0 {
-		return "-"
+func (listSD listStructuredData) marshal5424() []byte {
+	if len(listSD) == 0 {
+		return []byte{'-'}
 	}
 
-	ret := make([]string, len(list))
-	for i, sd := range list {
-		ret[i] = string(MarshalSD(sd))
+	ret_s	:= 0
+	t_a	:= make([][]byte, len(listSD))
+	for i, sd := range listSD {
+		t:= MarshalSD(sd)
+		ret_s	+= len(t)
+		t_a[i]	= t
 	}
 
-	return strings.Join(ret, "")
+	ret	:= make([]byte, 0, ret_s)
+	for _,sd := range t_a {
+		ret = append( ret, sd... )
+	}
+
+	return ret
 }
+
+func (listSD listStructuredData) String() string {
+	return string(listSD.marshal5424())
+}
+
+
 
 // tagOptions is the string following a comma in a struct field's "sd5424"
 // tag, or the empty string. It does not include the leading comma.

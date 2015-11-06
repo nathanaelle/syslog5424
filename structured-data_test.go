@@ -99,6 +99,6 @@ func Benchmark_SDMarshal(b *testing.B) {
 		/*for _, tt := range messageTest {
 			tt.m.String()
 		}*/
-		MarshalSD(sd_t[0].obj)
+		MarshalSD(sd_t[3].obj)
 	}
 }
