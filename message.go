@@ -5,8 +5,11 @@ import (
 	"time"
 	"bytes"
 	"errors"
+	"strings"
 	"strconv"
+	"unicode"
 )
+
 
 type Message struct {
 	prio      Priority
@@ -19,9 +22,12 @@ type Message struct {
 	message   string
 }
 
+
 const RFC5424TimeStamp string = "2006-01-02T15:04:05.999999Z07:00"
 
+
 var hostname, _ = os.Hostname()
+
 
 
 func Parse(data []byte) (Message,error) {
@@ -45,8 +51,6 @@ func Parse(data []byte) (Message,error) {
 		}
 
 		return Message{ *prio, ts, string(parts[2]), string(parts[3]), string(parts[4]), string(parts[5]), emptyListSD, "" },nil
-
-
 
 	case 8:
 		prio	:= new(Priority)
@@ -75,7 +79,20 @@ func Parse(data []byte) (Message,error) {
 
 // Create a Message with the timestamp, hostname, appname, the priority and the message preset
 func CreateMessage(appname string, prio Priority, message string) Message {
-	return Message{ prio, time.Now(), hostname, appname, "-", "-", emptyListSD, message }
+	return Message{ prio, time.Now(), hostname, valid_app(appname), "-", "-", emptyListSD, strings.TrimRightFunc(message, unicode.IsSpace) }
+}
+
+
+// Create a whole Message
+func CreateWholeMessage(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
+	return Message{ prio, ts, valid_host(host), valid_app(app), valid_procid(pid), valid_msgid(msgid), emptyListSD, strings.TrimRightFunc(message, unicode.IsSpace) }
+}
+
+
+// Forge a whole Message
+// hidden func because there is bypass
+func forge_message(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
+	return Message{ prio, ts, host, app, pid, msgid, emptyListSD, strings.TrimRightFunc(message, unicode.IsSpace) }
 }
 
 
@@ -136,44 +153,56 @@ func (msg Message) Epoch(s_sec string, s_nsec string) Message {
 
 
 // set the app-name of a Message
+func (msg Message) Host(host string) Message {
+	return Message{msg.prio, msg.timestamp, valid_host(host), msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+}
+
+
+// set the app-name of a Message
+func (msg Message) Time(ts time.Time) Message {
+	return Message{msg.prio, ts, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+}
+
+
+// set the app-name of a Message
 func (msg Message) AppName(appname string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, appname, msg.procid, msg.msgid, msg.sd, msg.message}
+	return Message{msg.prio, msg.timestamp, msg.hostname, valid_app(appname), msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
 
 // set the proc-id of a Message
 func (msg Message) ProcID(procid string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, procid, msg.msgid, msg.sd, msg.message}
+	return Message{ msg.prio, msg.timestamp, msg.hostname, msg.appname, valid_procid(procid), msg.msgid, msg.sd, msg.message }
 }
 
 
 // set the msg-id of a Message
 func (msg Message) MsgID(msgid string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msgid, msg.sd, msg.message}
+	return Message{ msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, valid_msgid(msgid), msg.sd, msg.message }
 }
 
 
 // set the priority of a Message
 func (msg Message) Priority(prio Priority) Message {
-	return Message{prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+	return Message{ prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message }
 }
 
 
 //set the hostname as the value get with gethostbyname()
 func (msg Message) LocalHost() Message {
-	return Message{msg.prio, msg.timestamp, hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+	return Message{ msg.prio, msg.timestamp, hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message }
 }
 
 
 //set the message part of a Message
 func (msg Message) Msg(message string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, message}
+	return Message{ msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, strings.TrimRightFunc(message, unicode.IsSpace) }
 }
 
 
 //set the message part of a Message
-func (msg Message) StructuredData(data interface{}) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd.Add(data), msg.message}
+func (msg Message) StructuredData(data ...interface{}) Message {
+	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd.Add(data...), msg.message}
 }
 
 

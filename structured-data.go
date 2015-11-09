@@ -32,10 +32,12 @@ var (
 	emptyListSD     = listStructuredData([]interface{}{})
 )
 
-func (listSD listStructuredData) Add(data interface{}) listStructuredData {
-	return listStructuredData(append([]interface{}(listSD), data))
 
+// Append data to a list of structured data
+func (listSD listStructuredData) Add(data ...interface{}) listStructuredData {
+	return listStructuredData(append([]interface{}(listSD), data...))
 }
+
 
 func (listSD listStructuredData) marshal5424() []byte {
 	if len(listSD) == 0 {

@@ -1,42 +1,41 @@
+// xx+build linux freebsd netbsd openbsd dragonfly
+
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
-// +build linux freebsd netbsd openbsd dragonfly
 
 import (
-	"errors"
+	"io"
 	"net"
+	"errors"
 )
 
-func (c *local_conn) Redial() (err error) {
+func (c *local_conn) os_redial() (io.ReadWriteCloser, error) {
 	logTypes := []string{"unixgram", "unix"}
 	logPaths := []string{"/dev/log", "/var/run/syslog", "/var/run/log"}
 
 	if c.address != "" && c.network != "" {
-		c.conn, err = net.Dial(c.network, c.address)
-		return
+		return net.Dial(c.network, c.address)
 	}
 
 	if c.address != "" {
 		for _, network := range logTypes {
 			conn, err := net.Dial(network, c.address)
 			if err == nil {
-				c.conn = conn
 				c.network = network
-				return nil
+				return conn,nil
 			}
 		}
-		return errors.New("no connection established")
+		return nil,errors.New("no connection established")
 	}
 
 	for _, network := range logTypes {
 		for _, path := range logPaths {
 			conn, err := net.Dial(network, path)
 			if err == nil {
-				c.conn = conn
 				c.network = network
 				c.address = path
-				return nil
+				return conn,nil
 			}
 		}
 	}
-	return errors.New("no connection established")
+	return nil,errors.New("no connection established")
 }

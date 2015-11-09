@@ -21,8 +21,8 @@ var messageTest = []MessageTest{
 		`<0>1 1970-01-01T01:00:00+01:00 - - - - [timeQuality tzKnown="1" isSynced="1"]`,
 	},
 	{
-		Message{Priority(0), time.Unix(0, 0), "bla", "bli", "blu", "blo", emptyListSD, "message" },
-		"<0>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
+		Message{Priority(24), time.Unix(0, 0), "bla", "bli", "blu", "blo", emptyListSD, "message" },
+		"<24>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
 	},
 }
 
@@ -64,6 +64,37 @@ func Benchmark_Message_Parse(b *testing.B) {
 	for i := 0; i < max; i++ {
 		for _, tt := range parseTest {
 			Parse([]byte(tt))
+		}
+	}
+}
+
+func Benchmark_Message_Chan(b *testing.B) {
+	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
+	ch := make(chan Message)
+	go func() {
+		for {
+			<-ch
+		}
+	}()
+	for i := 0; i < max; i++ {
+		for _, tt := range messageTest {
+			ch <- tt.m
+		}
+	}
+}
+
+
+func Benchmark_Message_ChanBuf(b *testing.B) {
+	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
+	ch := make(chan Message,100)
+	go func() {
+		for {
+			<-ch
+		}
+	}()
+	for i := 0; i < max; i++ {
+		for _, tt := range messageTest {
+			ch <- tt.m
 		}
 	}
 }

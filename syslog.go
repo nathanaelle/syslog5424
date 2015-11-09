@@ -16,20 +16,22 @@ type Syslog struct {
 	pid      string
 	appname  string
 	channels []Channel
-	output   Conn
+	output   *Sender
 	min_sev  int
 }
 
-func New(output Conn, min_priority Priority, appname string) (syslog *Syslog, err error) {
+func New(output *Sender, min_priority Priority, appname string) (syslog *Syslog, err error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "-"
 	}
+	hostname = valid_host(hostname)
 
 	if appname == "" {
 		err = errors.New("syslog.New needs a non empty appname")
 		return
 	}
+	appname = valid_app(appname)
 
 	syslog = &Syslog{
 		facility: min_priority.Facility(),
