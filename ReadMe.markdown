@@ -14,14 +14,11 @@ type someSD struct{
 
 func main() {
 	sl_conn,_:= syslog5424.Dial( "stdio", "stderr" )
-	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test app" )
+	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test-app" )
 
 	conflog := syslog.SubSyslog( "configuration" )
 
-	logger_info_conf := conflog.Channel( syslog5424.LOG_INFO ).Logger( "INFO : " )
 	logger_err_conf := conflog.Channel( syslog5424.LOG_ERR ).Logger( "ERR : " )
-
-	logger_info_conf.Print( "doing some stuff" )
 
 	logger_err_conf.Print( "doing some stuff" )
 

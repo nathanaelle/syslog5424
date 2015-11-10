@@ -1,9 +1,9 @@
 package syslog5424_test
 
 import (
-	"."
+	//"."
 	"time"
-	//"github.com/nathanaelle/syslog5424"
+	"github.com/nathanaelle/syslog5424"
 )
 
 type someSD struct {
