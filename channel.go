@@ -9,11 +9,16 @@ import (
 
 
 var (
+	// define the Now() function. only usefull in case of test or debug
 	Now func() time.Time = time.Now
 )
 
 
 type (
+
+
+	// Channel interface describe the common API of any logging channel.
+	// a logging channel is a context set for any log message or structured data
 	Channel interface {
 		io.Writer
 		IsDevNull() bool
@@ -23,9 +28,12 @@ type (
 		Log(string, ...interface{})
 	}
 
+	// /dev/null Channel
 	devnull struct {
 	}
 
+
+	// a msgChannel describe a channel with a MsgID already set
 	msgChannel struct {
 		devnull
 		priority Priority
@@ -36,6 +44,7 @@ type (
 		output   *Sender
 	}
 
+	//
 	trueChannel struct {
 		msgChannel
 	}

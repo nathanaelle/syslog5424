@@ -23,6 +23,7 @@ type Message struct {
 }
 
 
+// format of a RFC 5424 TimeStamp
 const RFC5424TimeStamp string = "2006-01-02T15:04:05.999999Z07:00"
 
 

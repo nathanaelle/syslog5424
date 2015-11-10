@@ -8,7 +8,7 @@ import (
 
 
 type (
-
+	// generic interface describing a Connection
 	Conn interface {
 		io.Reader
 		io.Writer
@@ -19,10 +19,12 @@ type (
 		// Redial MUST return in case of permanent error
 		Redial() error
 
+		// flush all the remaining buffers
 		Flush() error
 	}
 
 
+	// Sender describe the generic algorithm for sending Message through a connection
 	Sender struct {
 		output		Conn
 		pipeline	chan Message
@@ -30,9 +32,13 @@ type (
 	}
 
 
+	Addr	struct {
+		network	string
+		address string
+	}
 )
 
-
+// Create a new sender
 func NewSender(output Conn, pipeline chan Message, ticker <-chan time.Time) (*Sender) {
 	s := &Sender {
 		pipeline:	pipeline,
@@ -83,4 +89,13 @@ func (c *Sender) Send(m Message) {
 // terminate the log_sender goroutine
 func (c *Sender) End() {
 	close(c.pipeline)
+}
+
+
+func (a *Addr) String() string {
+	return a.network + "!" + a.address
+}
+
+func (a *Addr) Network() string {
+	return a.network
 }

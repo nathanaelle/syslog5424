@@ -9,9 +9,6 @@ import (
 
 
 type	(
-
-
-
 	Listener interface {
 		net.Listener
 	}
@@ -27,23 +24,20 @@ type	(
 		TLSConf		tls.Config
 	}
 
-	Receiver interface {
-		SetTransport(Transport)
-		RunQueue(chan []byte)
 
-		Receive() ([]byte, bool)
-
-		// terminate the log_collector goroutine
-		End()
+	Receiver struct {
+		listener	Listener
+		transport	Transport
+		pipeline	chan []byte
+		end		chan struct{}
 	}
-
 )
 
 
 
-func (d Collector)Collect(network,address string, t Transport) (Receiver,error) {
+func (d Collector)Collect(network,address string, t Transport) (*Receiver,error) {
 	var pipeline chan []byte
-	var c Receiver
+	var c Listener
 
 	switch network {
 	case "unix":
@@ -88,8 +82,53 @@ func (d Collector)Collect(network,address string, t Transport) (Receiver,error) 
 		pipeline = make(chan []byte, d.QueueLen)
 	}
 
-	c.SetTransport(t)
-	go c.RunQueue(pipeline)
+	return NewReceiver(c, pipeline, t),nil
+}
 
-	return c,nil
+
+func NewReceiver(listener Listener, pipeline chan []byte, t Transport) (*Receiver) {
+	r	:= &Receiver {
+		listener:	listener,
+		pipeline:	pipeline,
+		transport:	t,
+		end:		make(chan struct{}),
+	}
+
+	go r.run_queue()
+
+	return	r
+}
+
+
+func (r *Receiver) run_queue() {
+	defer	r.listener.Close()
+	defer	close(r.pipeline)
+
+	for {
+		select {
+		case <-r.end:
+			return
+
+		default:
+			conn, err := r.listener.Accept()
+			if err != nil {
+				panic(err)
+			}
+
+			go r.transport.Tokenize( new_buffer(1<<18, buffer_read, conn), r.pipeline)
+		}
+	}
+
+}
+
+
+func (r *Receiver) Receive() ([]byte, bool) {
+	b, end := <- r.pipeline
+	return b, end
+}
+
+
+// terminate the log_collector goroutine
+func (r *Receiver) End() {
+	close(r.end)
 }

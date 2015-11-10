@@ -11,13 +11,12 @@ type	(
 )
 
 
-func tcp_coll(network, address string) Receiver {
+func tcp_coll(network, address string) Listener {
 	var err error
 
 	r := new(tcp_receiver)
 	r.network	= network
 	r.address	= address
-	r.end		= make(chan struct{})
 
 	laddr, err	:= net.ResolveTCPAddr(network, address)
 	if err != nil {

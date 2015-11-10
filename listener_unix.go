@@ -11,20 +11,18 @@ type	(
 		network		string
 		address		string
 		listener	net.Listener
-		end		chan struct{}
 		transport	Transport
 		pipeline	chan []byte
 	}
 )
 
 
-func unix_coll(_, address string) Receiver {
+func unix_coll(_, address string) Listener {
 	var err error
 
 	r := new(unix_receiver)
 	r.network	= "unix"
 	r.address	= address
-	r.end		= make(chan struct{})
 
 	r.listener, err = net.ListenUnix("unix",  &net.UnixAddr { address, "unix" } )
 	for err != nil {
@@ -50,40 +48,16 @@ func unix_coll(_, address string) Receiver {
 }
 
 
-func (r *unix_receiver) End() {
-	close(r.end)
+func (r *unix_receiver) Accept() (net.Conn, error) {
+	return	r.listener.Accept()
 }
 
 
-func (r *unix_receiver) SetTransport(t Transport) {
-	r.transport	= t
+func (r *unix_receiver) Close() (error) {
+	return	r.listener.Close()
 }
 
 
-func (r *unix_receiver) Receive() ([]byte, bool) {
-	b, end := <- r.pipeline
-	return b, end
-}
-
-
-func (r *unix_receiver) RunQueue(pipeline chan []byte) {
-	defer	r.listener.Close()
-	defer	close(pipeline)
-	r.pipeline	= pipeline
-
-	for {
-		select {
-		case <-r.end:
-			return
-
-		default:
-			conn, err := r.listener.Accept()
-			if err != nil {
-				panic(err)
-			}
-
-			go r.transport.Tokenize( new_buffer(1<<18, buffer_read, conn), r.pipeline)
-		}
-	}
-
+func (r *unix_receiver) Addr() net.Addr {
+	return &Addr{ r.network, r.address }
 }
