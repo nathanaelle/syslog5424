@@ -10,18 +10,24 @@ import (
 
 
 type	(
+
 	gen_t		struct{
 		conn	Conn
 	}
 
+	// Encode frame in NULL terminated frame
 	T_ZEROENDED	struct{
 		gen_t
 	}
 
+	// Encode frame in LF terminated frame
 	T_LFENDED	struct{
 		gen_t
 	}
 
+	// Encode frame in RFC 5426 formated frame
+	// RFC 5426 Format format is :
+	// len([]byte) ' ' []byte
 	T_RFC5426	struct{
 		gen_t
 	}
@@ -29,13 +35,17 @@ type	(
 	Transport interface {
 		Conn
 
+		//
 		SetConn(Conn)
+
+		//
 		Tokenize(io.ReadWriteCloser, chan<-[]byte)
 	}
 
 )
 
 
+// see (Conn interface)[#Conn]
 func (t *gen_t) Flush() error {
 	if t.conn == nil {
 		return nil
@@ -48,6 +58,7 @@ func (t *gen_t) SetConn(c Conn) {
 	t.conn = c
 }
 
+// see (Conn interface)[#Conn]
 func (t *gen_t) Close() error {
 	if t.conn == nil {
 		return nil
@@ -57,6 +68,7 @@ func (t *gen_t) Close() error {
 }
 
 
+// see (Conn interface)[#Conn]
 func (t *gen_t) Redial() error {
 	if t.conn == nil {
 		return nil
@@ -66,6 +78,7 @@ func (t *gen_t) Redial() error {
 }
 
 
+// see (Conn interface)[#Conn]
 func (t *gen_t) Read(d []byte) (int,error) {
 	if t.conn == nil {
 		return 0,errors.New("no Conn set")
@@ -119,7 +132,8 @@ func (t *T_ZEROENDED) split(data []byte, atEOF bool) (int, []byte, error) {
 }
 
 
-// Write a NULL terminated message
+// Write a NULL terminated message.
+// see (Conn interface)[#Conn]
 func (t *T_ZEROENDED) Write(d []byte) (int,error) {
 	return t.write_conn(append(d, byte(0) ))
 }
@@ -158,6 +172,7 @@ func  (t *T_LFENDED) split(data []byte, atEOF bool) (int, []byte, error) {
 
 
 // Write a LF terminated message
+// see (Conn interface)[#Conn]
 func (t *T_LFENDED) Write(d []byte) (int,error) {
 	return t.write_conn(append(d, '\n' ))
 }
@@ -205,6 +220,8 @@ func (t *T_RFC5426) split(data []byte, atEOF bool) (int, []byte, error) {
 }
 
 
+// Write a RFC 5426 formated message
+// see (Conn interface)[#Conn]
 func (t *T_RFC5426) Write(d []byte) (int,error) {
 	l := len(d)
 	h := []byte(strconv.Itoa(l))
