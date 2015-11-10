@@ -30,7 +30,7 @@ func main() {
 
 ```
 
-see [example_syslog_test.go](example_syslog_test.go) for an up to date example.
+see [example_syslog-client_test.go](example_syslog-client_test.go) for an up to date example.
 
 ## Features
 
