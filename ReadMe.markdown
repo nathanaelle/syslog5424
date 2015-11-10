@@ -13,7 +13,7 @@ type someSD struct{
 }
 
 func main() {
-	sl_conn:= syslog5424.Dial( "stdio", "stderr", syslog5424.T_LFENDED, -1 )
+	sl_conn,_:= syslog5424.Dial( "stdio", "stderr" )
 	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test app" )
 
 	conflog := syslog.SubSyslog( "configuration" )
@@ -30,7 +30,42 @@ func main() {
 
 ```
 
-see [example_syslog_test.go](example_syslog_test.go) for a functionnal example.
+see [example_syslog_test.go](example_syslog_test.go) for an up to date example.
+
+## Features
+
+### Generic Features
+
+  * [x] golang log.Logger compliant
+  * [x] Handling multiple logging Channel
+  * [x] Providing /dev/null Channel
+  * [x] Extendable interfaces
+
+### RFC 5424
+
+  * [x] Encoding RFC 5424 Message
+  * [x] Decoding RFC 5424 Message
+  * [x] Encoding Structured Data
+  * [x] Encoding Private Structured Data
+  * [ ] Decoding Structured Data
+
+### Networking / Communication
+
+  * [x] Dial to a AF_UNIX datagram syslog server
+  * [x] Dial to a AF_UNIX stream syslog server
+  * [x] Dial to a TCP remote syslog server
+  * [ ] Dial to a TLS remote syslog server
+
+### Transport Encoding
+
+  * [x] Unix Datagram Transport
+  * [x] NULL terminated Transport
+  * [x] LF terminated Transport
+  * [x] RFC 5426 Transport
+
+## License
+
+2-Clause BSD
 
 ## What is Syslog5424 ?
 
@@ -45,26 +80,8 @@ This is a textual serialization of simple struct or map[string]string.
 This serialization is _typed_ or _named_ and one message can convey many Structured Data with one text message.
 So This is a very pertinent way to mix *metrics* and *keywords* and human reading message.
 
-## Features
-
-  * [x] Encoding Structured Data
-  * [x] Encoding RFC 5424 Message
-  * [x] Encoding Private Structured Data
-  * [ ] Decoding Structured Data
-  * [ ] Decoding RFC 5424 Message
-  * [x] Handling multi channels
-  * [x] Dial to a local unixdgram syslog server
-  * [x] Dial to a TCP remote syslog server
-  * [ ] Dial to a TLS remote syslog server
-  * [x] Unix Datagram Transport
-  * [x] LF separated transport
-  * [x] RFC 5426 Transport
-
-## License
-2-Clause BSD
-
 ## Todo
 
   * Write documentation [http://godoc.org/github.com/nathanaelle/syslog5424](http://godoc.org/github.com/nathanaelle/syslog5424)
   * Write comments
-  * Clean some ugly stuff
+  * Clean ugly stuff
