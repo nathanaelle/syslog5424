@@ -196,27 +196,30 @@ func (t *T_RFC5426) split(data []byte, atEOF bool) (int, []byte, error) {
 		return 0, nil, nil
 	}
 
-	i := bytes.IndexByte(data, ' ')
-	if i <= 0 {
-		if len(data) < 10 {
-			return 0, nil, nil
-		}
+	if len(data) < 20 {
+		return 0, nil, nil
+	}
+
+	sep_pos := bytes.IndexByte(data, ' ')
+	if sep_pos <= 0 {
 		return 0, nil, errors.New("T_RFC5426 Split: no header len")
 	}
 
-	l, err := strconv.Atoi(string(data[0:i]))
+	msg_len, err := strconv.Atoi(string(data[0:sep_pos]))
 	if err != nil {
 		return 0, nil, errors.New("T_RFC5426 Split: invalid header len")
 	}
 
-	if len(data) < l {
+	start	:= sep_pos+1
+	buf_len	:= start+msg_len
+	if len(data) < buf_len {
 		if atEOF {
 			return 0, nil, errors.New("T_RFC5426 Split: incomplete message")
 		}
 		return 0, nil, nil
 	}
 
-	return i+l+1, data[i:i+l+1], nil
+	return buf_len, data[start:buf_len], nil
 }
 
 
