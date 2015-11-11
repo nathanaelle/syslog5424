@@ -2,6 +2,7 @@ package syslog5424_test
 
 import (
 	//"."
+	"log"
 	"time"
 	"github.com/nathanaelle/syslog5424"
 )
@@ -11,7 +12,7 @@ type someSD struct {
 	Errno   int
 }
 
-func ExampleSyslog() {
+func ExampleSyslogClient() {
 	syslog5424.Now = func() time.Time {
 		t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "2014-12-20T14:04:00Z", time.UTC)
 		return t
@@ -19,12 +20,12 @@ func ExampleSyslog() {
 
 	sl_conn,err := syslog5424.Dial("stdio", "stdout")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	syslog, err := syslog5424.New(sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test-app")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	syslog.TestMode()
 

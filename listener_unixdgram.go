@@ -29,7 +29,7 @@ type	(
 )
 
 
-func unixgram_coll(_, address string) Listener {
+func unixgram_coll(_, address string) (Listener,error) {
 	var err error
 
 	r := new(unixgram_receiver)
@@ -42,21 +42,21 @@ func unixgram_coll(_, address string) Listener {
 		switch err.(type) {
 			case *net.OpError:
 				if err.(*net.OpError).Err.Error() != "bind: address already in use" {
-					panic(err)
+					return nil,err
 				}
 
 			default:
-				panic(err)
+				return nil,err
 		}
 
 		if _, r_err := os.Stat(address); r_err != nil {
-			panic(err)
+			return nil,err
 		}
 		os.Remove(address)
 
 		r.listener, err = net.ListenUnixgram("unixgram",  &net.UnixAddr { address, "unixgram" } )
 	}
-	return	r
+	return	r,nil
 }
 
 

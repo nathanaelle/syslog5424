@@ -118,7 +118,7 @@ func (t *T_ZEROENDED) split(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	if i := bytes.IndexByte(data, byte(0)); i >= 0 {
-		return i + 1, data[0:i+1], nil
+		return i + 1, data[0:i], nil
 	}
 
 	// TODO need to detect the non zero ended message here
@@ -159,7 +159,7 @@ func  (t *T_LFENDED) split(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		return i + 1, data[0:i+1], nil
+		return i + 1, data[0:i], nil
 	}
 
 	if atEOF {

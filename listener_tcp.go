@@ -11,7 +11,7 @@ type	(
 )
 
 
-func tcp_coll(network, address string) Listener {
+func tcp_coll(network, address string) (Listener,error) {
 	var err error
 
 	r := new(tcp_receiver)
@@ -20,13 +20,13 @@ func tcp_coll(network, address string) Listener {
 
 	laddr, err	:= net.ResolveTCPAddr(network, address)
 	if err != nil {
-		panic(err)
+		return nil,err
 	}
 
 	r.listener, err = net.ListenTCP(network, laddr )
 	if err != nil {
-		panic(err)
+		return nil,err
 	}
 
-	return	r
+	return	r,nil
 }

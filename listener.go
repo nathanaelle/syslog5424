@@ -34,40 +34,49 @@ type	(
 )
 
 
+func Collect(network,address string) (*Receiver,error) {
+	return (Collector{
+		QueueLen:	100,
+	}).Collect(network, address, nil)
+}
 
-func (d Collector)Collect(network,address string, t Transport) (*Receiver,error) {
-	var pipeline chan []byte
-	var c Listener
+
+func (d Collector) Collect(network,address string, t Transport) (*Receiver,error) {
+	var pipeline	chan []byte
+	var c		Listener
+	var err		error
 
 	switch network {
 	case "unix":
 		if t == nil {
 			t = new(T_ZEROENDED)
 		}
-		c = unix_coll(network, address)
+		c,err = unix_coll(network, address)
 
 	case "unixgram":
 		if t == nil {
 			t = new(T_ZEROENDED)
 		}
-		c = unixgram_coll(network, address)
+		c,err = unixgram_coll(network, address)
 
 	case "tcp", "tcp6", "tcp4":
 		if t == nil {
 			t = new(T_LFENDED)
 		}
-		c = tcp_coll(network, address)
+		c,err = tcp_coll(network, address)
 
-	/*
 	case "tls", "tls6", "tls4":
 		if t == nil {
-			t = new(T_LFENDED)
+			t = new(T_RFC5426)
 		}
-		c = tls_coll(network, address)
-	*/
+		c,err = tcp_coll(network, address)
 
 	default:
 		return nil, errors.New("unknown network for Collector : "+network)
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	if c == nil {
@@ -121,10 +130,18 @@ func (r *Receiver) run_queue() {
 
 }
 
-
-func (r *Receiver) Receive() ([]byte, bool) {
-	b, end := <- r.pipeline
+func (r *Receiver) ReceiveRaw() ([]byte, bool) {
+	b,end	:= <- r.pipeline
 	return b, end
+}
+
+
+
+func (r *Receiver) Receive() (Message, error, bool) {
+	b,end	:= r.ReceiveRaw()
+	msg,err	:= Parse(b)
+
+	return msg, err, end
 }
 
 

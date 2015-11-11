@@ -46,21 +46,6 @@ func New(output *Sender, min_priority Priority, appname string) (syslog *Syslog,
 		syslog.pid = "-"
 	}
 
-	syslog.channels = []Channel{
-		devNull, devNull, devNull, devNull,
-		devNull, devNull, devNull, devNull,
-	}
-
-	for sev := 0; sev <= syslog.min_sev; sev++ {
-		syslog.channels[sev] = &trueChannel{msgChannel{
-			priority: syslog.facility | Priority(sev),
-			hostname: hostname,
-			pid:      syslog.pid,
-			appname:  appname,
-			msgid:    "-",
-			output:   output,
-		}}
-	}
 
 	return syslog, nil
 }
@@ -71,6 +56,24 @@ func (syslog *Syslog) TestMode() {
 }
 
 func (syslog *Syslog) Channel(sev Priority) Channel {
+	if syslog.channels == nil {
+		syslog.channels = []Channel{
+			devNull, devNull, devNull, devNull,
+			devNull, devNull, devNull, devNull,
+		}
+
+		for sev := 0; sev <= syslog.min_sev; sev++ {
+			syslog.channels[sev] = &trueChannel{msgChannel{
+				priority: syslog.facility | Priority(sev),
+				hostname: syslog.hostname,
+				pid:      syslog.pid,
+				appname:  syslog.appname,
+				msgid:    "-",
+				output:   syslog.output,
+			}}
+		}
+	}
+
 	return syslog.channels[sev.Severity()]
 }
 

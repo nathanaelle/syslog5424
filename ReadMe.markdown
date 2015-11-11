@@ -13,21 +13,29 @@ type someSD struct{
 }
 
 func main() {
+	// create a connection to a server
 	sl_conn,_:= syslog5424.Dial( "stdio", "stderr" )
+
+	// create a syslog wrapper around the connection
 	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test-app" )
 
-	conflog := syslog.SubSyslog( "configuration" )
+	// create a channel for errors
+	err_channel	:= syslog.Channel( syslog5424.LOG_ERR )
 
-	logger_err_conf := conflog.Channel( syslog5424.LOG_ERR ).Logger( "ERR : " )
+	// plug the golang log.Logger API to this channel
+	logger_err := err_channel.Logger( "ERR : " )
 
-	logger_err_conf.Print( "doing some stuff" )
+	// log a message through the log.Logger
+	logger_err.Print( "doing some stuff" )
 
-	conflog.Channel(syslog5424.LOG_ERR).Log( "another message", someSD{ "some message", 42 } )
+	// log a message directly with some structured data
+	err_channel.Log( "another message", someSD{ "some message", 42 } )
 }
 
 ```
 
-see [example_syslog-client_test.go](example_syslog-client_test.go) for an up to date example.
+  * Example of client : [example_client_test.go](example_client_test.go)
+  * Example of server :  [example_server_test.go](example_server_test.go)
 
 ## Features
 

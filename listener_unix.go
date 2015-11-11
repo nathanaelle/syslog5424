@@ -17,7 +17,7 @@ type	(
 )
 
 
-func unix_coll(_, address string) Listener {
+func unix_coll(_, address string) (Listener,error) {
 	var err error
 
 	r := new(unix_receiver)
@@ -29,22 +29,22 @@ func unix_coll(_, address string) Listener {
 		switch err.(type) {
 			case *net.OpError:
 				if err.(*net.OpError).Err.Error() != "bind: address already in use" {
-					panic(err)
+					return nil,err
 				}
 
 			default:
-				panic(err)
+				return nil,err
 		}
 
 		if _, r_err := os.Stat(address); r_err != nil {
-			panic(err)
+			return nil,err
 		}
 		os.Remove(address)
 
 		r.listener, err = net.ListenUnix("unix",  &net.UnixAddr { address, "unix" } )
 	}
 
-	return	r
+	return	r,nil
 }
 
 
