@@ -13,13 +13,6 @@ type	(
 
 		// delay to flush the queue
 		FlushDelay	time.Duration
-
-		// Dialer to use in case of custom TCP connection
-		// TODO implement it
-		SubDialer	func(network, address string) (Conn, error)
-
-		// TODO implement it
-		TLSConf		tls.Config
 	}
 )
 
@@ -70,14 +63,6 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender,error) {
 			t = new(T_LFENDED)
 		}
 		c = tcp_dial(network, address)
-
-	/*
-	case "tls", "tls6", "tls4":
-		if t == nil {
-			t = new(T_RFC5426)
-		}
-		c = tls_dial(network, address, d.TLSConf)
-	*/
 
 	default:
 		return nil, errors.New("unknown network for Dial : "+network)

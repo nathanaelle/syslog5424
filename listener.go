@@ -20,8 +20,6 @@ type	(
 
 		scan		*bufio.Scanner
 		pipeline	chan []byte
-
-		TLSConf		tls.Config
 	}
 
 
@@ -62,12 +60,6 @@ func (d Collector) Collect(network,address string, t Transport) (*Receiver,error
 	case "tcp", "tcp6", "tcp4":
 		if t == nil {
 			t = new(T_LFENDED)
-		}
-		c,err = tcp_coll(network, address)
-
-	case "tls", "tls6", "tls4":
-		if t == nil {
-			t = new(T_RFC5426)
 		}
 		c,err = tcp_coll(network, address)
 

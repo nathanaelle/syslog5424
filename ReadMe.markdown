@@ -60,7 +60,9 @@ func main() {
   * [x] Dial to a AF_UNIX datagram syslog server
   * [x] Dial to a AF_UNIX stream syslog server
   * [x] Dial to a TCP remote syslog server
-  * [ ] Dial to a TLS remote syslog server
+  * [x] Accept to a AF_UNIX datagram syslog server
+  * [x] Accept to a AF_UNIX stream syslog server
+  * [x] Accept to a TCP remote syslog server
 
 ### Transport Encoding
 
@@ -73,18 +75,29 @@ func main() {
 
 2-Clause BSD
 
-## What is Syslog5424 ?
+## Questions
+
+### What is Syslog5424 ?
 
 Syslog5424 is a library for coping with syslog message through the log.Logger API.
 Syslog5424 only produce syslog packet that are compatible with RFC 5424.
 Those messages are not compatible with RFC 3164.
 
-### Structured Data
+### What is Structured Data ?
 
 The main point of the 5424 is structured data.
 This is a textual serialization of simple struct or map[string]string.
 This serialization is _typed_ or _named_ and one message can convey many Structured Data with one text message.
 So This is a very pertinent way to mix *metrics* and *keywords* and human reading message.
+
+### Why remove parts of code about TLS ?
+
+TLS is supported because the networing is implemented as interfaces.
+but my idea of "security" is not compatible with maintaining duplicate code.
+
+so, you can :
+  * 1. write your own code with the golang TLS stack (every things are provided through interfaces)
+  * 2. wait my code ( in [https://github.com/nathanaelle/pasnet](https://github.com/nathanaelle/pasnet) ) with the golang TLS stack wich will provide OCSP and Public Key verification
 
 ## Todo
 
