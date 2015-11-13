@@ -35,8 +35,8 @@ func main() {
 ```
 
   * Example of client : [example_01-client_test.go](example_01-client_test.go)
-  * Example of server :  [example_02-server_test.go](example_01-server_test.go)
-  * Example of custom transport :  [example_02-custom_test.go](example_03-custom_test.go)
+  * Example of server :  [example_02-server_test.go](example_02-server_test.go)
+  * Example of custom transport :  [example_03-custom_test.go](example_03-custom_test.go)
 
 ## Features
 
