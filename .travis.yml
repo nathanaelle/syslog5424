@@ -7,3 +7,4 @@ branches:
   only:
   - master
 install:
+- "github.com/nathanaelle/syslog5424"
