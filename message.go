@@ -39,7 +39,7 @@ func Parse(data []byte) (Message,error) {
 		prio	:= new(Priority)
 		err	:= prio.Unmarshal5424(parts[0])
 		if err != nil {
-			return EmptyMessage(),errors.New("Wrong Priority :"+string(parts[0]))
+			return EmptyMessage(),errors.New("Wrong Priority : "+err.Error()+ " : ["+string(parts[0])+"]")
 		}
 
 		ts,err	:= time.Parse(RFC5424TimeStamp, string(parts[1]))
@@ -57,7 +57,7 @@ func Parse(data []byte) (Message,error) {
 		prio	:= new(Priority)
 		err	:= prio.Unmarshal5424(parts[0])
 		if err != nil {
-			return EmptyMessage(),errors.New("Wrong Priority :"+string(parts[0]))
+			return EmptyMessage(),errors.New("Wrong Priority : "+err.Error()+ " : ["+string(parts[0])+"]")
 		}
 
 		ts,err	:= time.Parse(RFC5424TimeStamp, string(parts[1]))

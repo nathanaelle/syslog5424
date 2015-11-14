@@ -13,25 +13,34 @@ type MessageTest struct {
 
 var messageTest = []MessageTest{
 	{
-		Message{Priority(0), time.Unix(0, 0), "-", "-", "-", "-", emptyListSD, ""},
-		"<0>1 1970-01-01T01:00:00+01:00 - - - - -",
+		Message{Priority(0), z_epoch(), "-", "-", "-", "-", emptyListSD, ""},
+		"<0>1 1970-01-01T01:00:00Z - - - - -",
 	},
 	{
-		Message{Priority(0), time.Unix(0, 0), "-", "-", "-", "-", []interface{}{timeQuality{pint(1), pint(1), nil}}, ""},
-		`<0>1 1970-01-01T01:00:00+01:00 - - - - [timeQuality tzKnown="1" isSynced="1"]`,
+		Message{Priority(0), z_epoch(), "-", "-", "-", "-", []interface{}{timeQuality{pint(1), pint(1), nil}}, ""},
+		`<0>1 1970-01-01T01:00:00Z - - - - [timeQuality tzKnown="1" isSynced="1"]`,
 	},
 	{
-		Message{Priority(24), time.Unix(0, 0), "bla", "bli", "blu", "blo", emptyListSD, "message" },
-		"<24>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
+		Message{Priority(24), z_epoch(), "bla", "bli", "blu", "blo", emptyListSD, "message" },
+		"<24>1 1970-01-01T01:00:00Z bla bli blu blo - message",
 	},
 }
 
 var parseTest = []string{
 	"<0>1 1970-01-01T01:00:00+01:00 - - - - -",
-	"<12>1 1970-01-01T01:00:00+01:00 - - - - -",
-	"<0>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
+	"<12>1 1970-01-01T01:00:00Z - - - - -",
+	"<0>1 1970-01-01T01:00:00Z bla bli blu blo - message",
 	"<234>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
 }
+
+
+
+func z_epoch() time.Time {
+	t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "1970-01-01T01:00:00Z", time.UTC)
+	return t
+}
+
+
 
 
 func Test_Message_String(t *testing.T) {
