@@ -1,8 +1,6 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"io"
-	"bufio"
 	"bytes"
 	"errors"
 	"strconv"
@@ -35,11 +33,11 @@ type	(
 	Transport interface {
 		Conn
 
-		//
+		// Set the sub conn where to write the transport-encoded data
 		SetConn(Conn)
 
-		//
-		Tokenize(io.ReadWriteCloser, chan<-[]byte)
+		// see bufio.Scanner
+		Split([]byte, bool) (int, []byte, error)
 	}
 
 )
@@ -112,7 +110,7 @@ func (t *gen_t) write_conn(data []byte) (int,error) {
 
 
 // split function for NULL terminated message
-func (t *T_ZEROENDED) split(data []byte, atEOF bool) (int, []byte, error) {
+func (t *T_ZEROENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
@@ -139,21 +137,8 @@ func (t *T_ZEROENDED) Write(d []byte) (int,error) {
 }
 
 
-func (t *T_ZEROENDED) Tokenize(conn io.ReadWriteCloser, pipeline chan<-[]byte) {
-	scan	:= bufio.NewScanner(conn)
-	scan.Split(t.split)
-
-	for scan.Scan() {
-		pipeline <- scan.Bytes()
-	}
-
-	conn.Close()
-}
-
-
-
 // split function for LF terminated message
-func  (t *T_LFENDED) split(data []byte, atEOF bool) (int, []byte, error) {
+func  (t *T_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
@@ -178,20 +163,9 @@ func (t *T_LFENDED) Write(d []byte) (int,error) {
 }
 
 
-func (t *T_LFENDED) Tokenize(conn io.ReadWriteCloser, pipeline chan<-[]byte) {
-	scan	:= bufio.NewScanner(conn)
-	scan.Split(t.split)
-
-	for scan.Scan() {
-		pipeline <- scan.Bytes()
-	}
-
-	conn.Close()
-}
-
 
 // split function for RFC 5426 message
-func (t *T_RFC5426) split(data []byte, atEOF bool) (int, []byte, error) {
+func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
@@ -234,16 +208,4 @@ func (t *T_RFC5426) Write(d []byte) (int,error) {
 	copy(ret[len(h)+1:], d[:])
 
 	return t.write_conn(ret)
-}
-
-
-func (t *T_RFC5426) Tokenize(conn io.ReadWriteCloser, pipeline chan<-[]byte) {
-	scan	:= bufio.NewScanner(conn)
-	scan.Split(t.split)
-
-	for scan.Scan() {
-		pipeline <- scan.Bytes()
-	}
-
-	conn.Close()
 }

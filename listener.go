@@ -1,10 +1,10 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
+	"io"
 	"net"
 	"bufio"
 	"errors"
-	"crypto/tls"
 )
 
 
@@ -116,11 +116,23 @@ func (r *Receiver) run_queue() {
 				panic(err)
 			}
 
-			go r.transport.Tokenize( new_buffer(1<<18, buffer_read, conn), r.pipeline)
+			go r.tokenize(new_buffer(1<<18, buffer_read, conn))
 		}
 	}
 
 }
+
+func (r *Receiver) tokenize(conn io.ReadWriteCloser) {
+	scan	:= bufio.NewScanner(conn)
+	scan.Split(r.transport.Split)
+
+	for scan.Scan() {
+		r.pipeline <- scan.Bytes()
+	}
+
+	conn.Close()
+}
+
 
 func (r *Receiver) ReceiveRaw() ([]byte, bool) {
 	b,end	:= <- r.pipeline
