@@ -2,6 +2,8 @@
 
 ## Example
 
+Branch: master — [![master|Build Status](https://travis-ci.org/nathanaelle/syslog5424.svg?branch=master)](https://travis-ci.org/nathanaelle/syslog5424)
+
 ```
 import	(
 	"github.com/nathanaelle/syslog5424"
