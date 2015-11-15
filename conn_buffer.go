@@ -28,6 +28,22 @@ const	(
 	buffer_write
 )
 
+func (t t_buffer) String() string() {
+	switch t {
+	case buffer_read:
+		return "Buffer Read"
+	case buffer_write:
+		return "Buffer Write"
+	case buffer_unknown:
+		return "Buffer Unknown"
+	}
+
+	return "Buffer Illegal Value"
+}
+
+
+
+
 
 func new_buffer(l int, t t_buffer, c io.ReadWriteCloser) *buffer {
 	return &buffer {

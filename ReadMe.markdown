@@ -1,8 +1,8 @@
 # Syslog5424
 
-## Example
+![License](http://img.shields.io/badge/license-BSD_2_Clause-red.svg?style=flat) [![Go Doc](http://img.shields.io/badge/godoc-syslog5424-blue.svg?style=flat)](http://godoc.org/github.com/nathanaelle/syslog5424) [![Build Status](https://travis-ci.org/nathanaelle/syslog5424.svg?branch=master)](https://travis-ci.org/nathanaelle/syslog5424)
 
-Branch: master — [![master|Build Status](https://travis-ci.org/nathanaelle/syslog5424.svg?branch=master)](https://travis-ci.org/nathanaelle/syslog5424)
+## Example
 
 ```
 import	(
@@ -35,7 +35,6 @@ func main() {
 }
 
 ```
-
   * Example of client : [example_01-client_test.go](example_01-client_test.go)
   * Example of server :  [example_02-server_test.go](example_02-server_test.go)
   * Example of custom transport :  [example_03-custom_test.go](example_03-custom_test.go)
@@ -103,6 +102,6 @@ so, you can :
 
 ## Todo
 
-  * Write documentation [http://godoc.org/github.com/nathanaelle/syslog5424](http://godoc.org/github.com/nathanaelle/syslog5424)
+  * Write documentation
   * Write comments
   * Clean ugly stuff
