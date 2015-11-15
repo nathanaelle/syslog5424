@@ -28,7 +28,7 @@ const	(
 	buffer_write
 )
 
-func (t t_buffer) String() string() {
+func (t t_buffer) String() string {
 	switch t {
 	case buffer_read:
 		return "Buffer Read"
