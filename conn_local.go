@@ -21,7 +21,7 @@ func local_dial(network, address string) Conn {
 
 	s.address	= address
 	s.network	= network
-	s.writer	= new_buffer(1<<12, buffer_write, nil)
+	s.writer	= new_buffer(1<<10, buffer_write, nil)
 
 	return s
 }
@@ -29,6 +29,7 @@ func local_dial(network, address string) Conn {
 
 func (c *local_conn) Close() error {
 	if c.writer != nil {
+		c.writer.Flush()
 		return c.writer.Close()
 	}
 	if c.reader != nil {

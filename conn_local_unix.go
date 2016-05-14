@@ -9,7 +9,7 @@ import (
 )
 
 func (c *local_conn) os_redial() (io.ReadWriteCloser, error) {
-	logTypes := []string{"unixgram", "unix"}
+	logTypes := []string{"unix","unixgram"}
 	logPaths := []string{"/dev/log", "/var/run/syslog", "/var/run/log"}
 
 	if c.address != "" && c.network != "" {

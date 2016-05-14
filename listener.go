@@ -116,7 +116,7 @@ func (r *Receiver) run_queue() {
 				panic(err)
 			}
 
-			go r.tokenize(new_buffer(1<<18, buffer_read, conn))
+			go r.tokenize(conn)
 		}
 	}
 

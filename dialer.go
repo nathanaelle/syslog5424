@@ -81,6 +81,7 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender,error) {
 
 	switch {
 	case d.FlushDelay <= time.Millisecond:
+		// less than 1ms => disable auto flush
 		ticker	= make(chan time.Time)
 
 	default:

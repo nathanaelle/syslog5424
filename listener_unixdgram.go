@@ -83,7 +83,7 @@ func (r *unixgram_receiver) Accept() (net.Conn, error) {
 	fc	:= &fake_conn{
 		addr:	 &Addr{ r.network, r.address },
 		queue:	make(chan []byte,1000),
-		end:	make(chan struct{}),
+		end:	r.end,
 	}
 
 	go fc.run_queue(r.listener)
@@ -128,7 +128,6 @@ func (c *fake_conn) Flush() error {
 
 
 func (r *fake_conn) Close() error {
-	close(r.end)
 	return nil
 }
 
@@ -167,22 +166,24 @@ func (r *fake_conn) run_queue(conn *net.UnixConn) {
 			return
 
 		default:
-			buffer := make([]byte, 65536)
+			buffer := make([]byte, 1<<16)
 
-			_,_,err := conn.ReadFrom(buffer)
-			if err != nil {
+			conn.SetReadDeadline(time.Now().Add(1000*time.Millisecond))
+			s,_,err := conn.ReadFrom(buffer)
+			switch	t_err := err.(type) {
+			case	nil:
+			case	net.Error:
+				if !t_err.Timeout() {
+					panic(err)
+				}
+			default:
 				panic(err)
 			}
 
-			i := len(buffer)
-			for i >0 {
-				i--
-				if buffer[i] != '0' {
-					break
-				}
+			if s > 0 {
+				r.queue <- buffer[0:s]
 			}
 
-			r.queue <- buffer[0:i+2]
 		}
 	}
 
