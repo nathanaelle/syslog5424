@@ -38,6 +38,8 @@ type	(
 
 		// see bufio.Scanner
 		Split([]byte, bool) (int, []byte, error)
+
+		String() string
 	}
 
 )
@@ -108,6 +110,24 @@ func (t *gen_t) write_conn(data []byte) (int,error) {
 	return	t_len,nil
 }
 
+func (t *gen_t) String() string {
+	return "unknown transport"
+}
+
+
+func (t *T_ZEROENDED) String() string {
+	return "zero ended transport"
+}
+
+
+func (t *T_LFENDED) String() string {
+	return "lf ended transport"
+}
+
+
+func (t *T_RFC5426) String() string {
+	return "rfc 5426 transport"
+}
 
 // split function for NULL terminated message
 func (t *T_ZEROENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
@@ -148,7 +168,8 @@ func  (t *T_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	if atEOF {
-		return len(data), data, nil
+		//return len(data), data, nil
+		return 0, nil, errors.New("T_LFENDED Split: incomplete message")
 	}
 
 	// more data.
