@@ -14,7 +14,7 @@ type (
 
 // dialer that forward to a local RFC5424 syslog receiver
 func tcp_dial(network, address string) Conn {
-	s := new(local_conn)
+	s := new(tcp_conn)
 
 	s.address	= address
 	s.network	= network
@@ -27,6 +27,7 @@ func tcp_dial(network, address string) Conn {
 
 func (c *tcp_conn) Close() error {
 	if c.writer != nil {
+		c.writer.Flush()
 		return c.writer.Close()
 	}
 	if c.reader != nil {
