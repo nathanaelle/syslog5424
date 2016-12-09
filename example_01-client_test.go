@@ -42,7 +42,6 @@ func ExampleSyslogClient() {
 	conflog.Channel(LOG_ERR).Log("another message with structured data", someSD{"some message", 42})
 
 	// closing the connection and flushing all remaining logs
-	time.Sleep(time.Second)
 	sl_conn.End()
 
 	// Output:

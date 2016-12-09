@@ -28,6 +28,7 @@ type (
 	Sender struct {
 		output		Conn
 		pipeline	chan Message
+		end_completed	chan struct{}
 		ticker		<-chan time.Time
 	}
 
@@ -42,6 +43,7 @@ type (
 func NewSender(output Conn, pipeline chan Message, ticker <-chan time.Time) (*Sender) {
 	s := &Sender {
 		pipeline:	pipeline,
+		end_completed:	make(chan struct{}),
 		output:		output,
 		ticker:		ticker,
 	}
@@ -59,6 +61,7 @@ func (c *Sender) run_queue() {
 	}
 
 	defer c.output.Close()
+	defer func() { close(c.end_completed) }()
 
 	for {
 		select {
@@ -89,6 +92,7 @@ func (c *Sender) Send(m Message) {
 // terminate the log_sender goroutine
 func (c *Sender) End() {
 	close(c.pipeline)
+	<-c.end_completed
 }
 
 
