@@ -56,12 +56,14 @@ func NewSender(output Conn, pipeline chan Message, ticker <-chan time.Time) (*Se
 
 
 func (c *Sender) run_queue() {
+	defer func() {
+		c.output.Close()
+		close(c.end_completed)
+	}()
+
 	if err := c.output.Redial(); err != nil {
 		log.Fatal(err)
 	}
-
-	defer c.output.Close()
-	defer func() { close(c.end_completed) }()
 
 	for {
 		select {

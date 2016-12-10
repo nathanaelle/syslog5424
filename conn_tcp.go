@@ -27,7 +27,6 @@ func tcp_dial(network, address string) Conn {
 
 func (c *tcp_conn) Close() error {
 	if c.writer != nil {
-		c.writer.Flush()
 		return c.writer.Close()
 	}
 	if c.reader != nil {

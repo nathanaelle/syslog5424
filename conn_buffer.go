@@ -21,6 +21,10 @@ type (
 	}
 )
 
+var	(
+	err_buff_close	error	= errors.New("error in syslog5424 at buffer.Close()")
+)
+
 
 const	(
 	buffer_unknown	t_buffer	= iota
@@ -64,13 +68,20 @@ func (b *buffer) SetConn(c io.ReadWriteCloser) {
 
 // io.Closer
 func (b *buffer) Close() error {
-	return b.Flush()
+	switch	b.t {
+	case	buffer_read:
+		return	b.conn.Close()
 
-/*	if err := b.Flush(); err != nil {
-		return err
+	case	buffer_write:
+		b.l.Lock()
+		defer	b.l.Unlock()
+
+		if err := b.true_flush(); err != nil {
+			return err
+		}
+		return	b.conn.Close()
 	}
-
-	return b.conn.Close() */
+	return	err_buff_close
 }
 
 
