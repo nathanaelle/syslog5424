@@ -43,7 +43,7 @@ func z_epoch() time.Time {
 
 
 
-func Test_Message_String(t *testing.T) {
+func Test_Message(t *testing.T) {
 	for _, tt := range messageTest {
 		a := tt.m.String()
 		if a != tt.a {
@@ -51,9 +51,7 @@ func Test_Message_String(t *testing.T) {
 			continue
 		}
 	}
-}
 
-func Test_Message_Parse_String(t *testing.T) {
 	for _, tt := range parseTest {
 		a,err := Parse([]byte(tt))
 		if err != nil {

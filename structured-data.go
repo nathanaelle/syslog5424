@@ -9,7 +9,7 @@ import (
 //	http://www.iana.org/assignments/syslog-parameters/syslog-parameters.xhtml#syslog-parameters-4
 
 type (
-	listStructuredData []interface{}
+		listStructuredData []interface{}
 
 	SDUnmarshaler interface {
 		Unmarshal5424([]byte) error
@@ -18,6 +18,8 @@ type (
 	SDMarshaler interface {
 		Marshal5424() ([]byte, error)
 	}
+
+
 
 	SDPEN interface {
 		GetPEN() uint64
