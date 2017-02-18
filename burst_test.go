@@ -16,7 +16,6 @@ const	BURST_MESSAGE	string	= "doing some stuff"
 const	BURST_PACKET	string	= "<27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing some stuff"
 const	BURST_COUNT	int	= 1000
 
-
 type	burst_tok struct {
 	sock		string
 	network		string

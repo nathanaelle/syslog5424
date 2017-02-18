@@ -122,12 +122,12 @@ func (r *Receiver) run_queue() {
 
 }
 
-func (r *Receiver) tokenize(conn io.ReadWriteCloser) {
+func (r *Receiver) tokenize(conn io.ReadCloser) {
 	scan	:= bufio.NewScanner(conn)
 	scan.Split(r.transport.Split)
 
 	for scan.Scan() {
-		r.pipeline <- scan.Bytes()
+		r.pipeline <- []byte(scan.Text())
 	}
 
 	conn.Close()
