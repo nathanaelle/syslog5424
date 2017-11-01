@@ -134,6 +134,6 @@ func Benchmark_Message_CreateMessage(b *testing.B) {
 
 func Benchmark_Message_CreateMessage_Call(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		EmptyMessage().AppName("test-app").Priority(Priority(21)).LocalHost().Now().Msg("test message")
+		EmptyMessage().SetAppName("test-app").SetPriority(Priority(21)).SetLocalHost().SetTimeNow().SetMsg("test message")
 	}
 }
