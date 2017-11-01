@@ -44,17 +44,17 @@ func main() {
 ### Generic Features
 
   * [x] golang log.Logger compliant
-  * [x] Handling multiple logging Channel
-  * [x] Providing /dev/null Channel
+  * [x] Handle multiple logging Channels
+  * [x] Provide /dev/null Channel
   * [x] Extendable interfaces
 
 ### RFC 5424
 
-  * [x] Encoding RFC 5424 Message
-  * [x] Decoding RFC 5424 Message
-  * [x] Encoding Structured Data
-  * [x] Encoding Private Structured Data
-  * [ ] Decoding Structured Data
+  * [x] Encode RFC 5424 Message
+  * [x] Decode RFC 5424 Message
+  * [x] Encode Structured Data
+  * [x] Encode Private Structured Data
+  * [ ] Decode Structured Data
 
 ### Networking / Communication
 
@@ -80,16 +80,16 @@ func main() {
 
 ### What is Syslog5424 ?
 
-Syslog5424 is a library for coping with syslog message through the log.Logger API.
-Syslog5424 only produce syslog packet that are compatible with RFC 5424.
+Syslog5424 is a library for coping with syslog messages through the log.Logger API.
+Syslog5424 only produces syslog packets that are compatible with RFC 5424.
 Those messages are not compatible with RFC 3164.
 
 ### What is Structured Data ?
 
-The main point of the 5424 is structured data.
+The main point of the RFC 5424 is structured data.
 This is a textual serialization of simple struct or map[string]string.
-This serialization is _typed_ or _named_ and one message can convey many Structured Data with one text message.
-So This is a very pertinent way to mix *metrics* and *keywords* and human reading message.
+This serialization is _typed_ or _named_ and one text message can convey many Structured Data entries.
+So This is a very pertinent way to mix *metrics*, *keywords* and human readable messages.
 
 ### Why remove parts of code about TLS ?
 
@@ -97,8 +97,9 @@ TLS is supported because the networing is implemented as interfaces.
 but my idea of "security" is not compatible with maintaining duplicate code.
 
 so, you can :
-  * 1. write your own code with the golang TLS stack (every things are provided through interfaces)
-  * 2. wait my code ( in [https://github.com/nathanaelle/pasnet](https://github.com/nathanaelle/pasnet) ) with the golang TLS stack wich will provide OCSP and Public Key verification
+
+1. Write your own code with the golang TLS stack (everything is provided through interfaces)
+2. Wait for my implementation ( in [https://github.com/nathanaelle/pasnet](https://github.com/nathanaelle/pasnet) ) with the golang TLS stack wich will provide OCSP and Public Key verification
 
 ## Todo
 
