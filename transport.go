@@ -6,27 +6,25 @@ import (
 	"strconv"
 )
 
-
-type	(
-
-	gen_t		struct{
-		conn	Conn
+type (
+	gen_t struct {
+		conn Conn
 	}
 
 	// Encode frame in NULL terminated frame
-	T_ZEROENDED	struct{
+	T_ZEROENDED struct {
 		gen_t
 	}
 
 	// Encode frame in LF terminated frame
-	T_LFENDED	struct{
+	T_LFENDED struct {
 		gen_t
 	}
 
 	// Encode frame in RFC 5426 formated frame
 	// RFC 5426 Format format is :
 	// len([]byte) ' ' []byte
-	T_RFC5426	struct{
+	T_RFC5426 struct {
 		gen_t
 	}
 
@@ -41,9 +39,7 @@ type	(
 
 		String() string
 	}
-
 )
-
 
 // see (Conn interface)[#Conn]
 func (t *gen_t) Flush() error {
@@ -67,7 +63,6 @@ func (t *gen_t) Close() error {
 	return t.conn.Close()
 }
 
-
 // see (Conn interface)[#Conn]
 func (t *gen_t) Redial() error {
 	if t.conn == nil {
@@ -77,53 +72,47 @@ func (t *gen_t) Redial() error {
 	return t.conn.Redial()
 }
 
-
 // see (Conn interface)[#Conn]
-func (t *gen_t) Read(d []byte) (int,error) {
+func (t *gen_t) Read(d []byte) (int, error) {
 	if t.conn == nil {
-		return 0,errors.New("no Conn set")
+		return 0, errors.New("no Conn set")
 	}
 
 	return t.conn.Read(d)
 }
 
-
-func (t *gen_t) write_conn(data []byte) (int,error) {
+func (t *gen_t) write_conn(data []byte) (int, error) {
 	if t.conn == nil {
-		return 0,errors.New("no Conn set")
+		return 0, errors.New("no Conn set")
 	}
 
-	p	:= 0
-	t_len	:= len(data)
+	p := 0
+	t_len := len(data)
 	for p < t_len {
-		s,err := t.conn.Write(data[p:])
-		p +=s
+		s, err := t.conn.Write(data[p:])
+		p += s
 		if err == nil {
 			continue
 		}
-
 
 		// TODO do some magic
 
 	}
 
-	return	t_len,nil
+	return t_len, nil
 }
 
 func (t *gen_t) String() string {
 	return "unknown transport"
 }
 
-
 func (t *T_ZEROENDED) String() string {
 	return "zero ended transport"
 }
 
-
 func (t *T_LFENDED) String() string {
 	return "lf ended transport"
 }
-
 
 func (t *T_RFC5426) String() string {
 	return "rfc 5426 transport"
@@ -149,16 +138,14 @@ func (t *T_ZEROENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
 	return 0, nil, nil
 }
 
-
 // Write a NULL terminated message.
 // see (Conn interface)[#Conn]
-func (t *T_ZEROENDED) Write(d []byte) (int,error) {
-	return t.write_conn(append(d, byte(0) ))
+func (t *T_ZEROENDED) Write(d []byte) (int, error) {
+	return t.write_conn(append(d, byte(0)))
 }
 
-
 // split function for LF terminated message
-func  (t *T_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
+func (t *T_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
@@ -176,14 +163,11 @@ func  (t *T_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
 	return 0, nil, nil
 }
 
-
 // Write a LF terminated message
 // see (Conn interface)[#Conn]
-func (t *T_LFENDED) Write(d []byte) (int,error) {
-	return t.write_conn(append(d, '\n' ))
+func (t *T_LFENDED) Write(d []byte) (int, error) {
+	return t.write_conn(append(d, '\n'))
 }
-
-
 
 // split function for RFC 5426 message
 func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
@@ -205,8 +189,8 @@ func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
 		return 0, nil, errors.New("T_RFC5426 Split: invalid header len")
 	}
 
-	start	:= sep_pos+1
-	buf_len	:= start+msg_len
+	start := sep_pos + 1
+	buf_len := start + msg_len
 	if len(data) < buf_len {
 		if atEOF {
 			return 0, nil, errors.New("T_RFC5426 Split: incomplete message")
@@ -217,10 +201,9 @@ func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
 	return buf_len, data[start:buf_len], nil
 }
 
-
 // Write a RFC 5426 formated message
 // see (Conn interface)[#Conn]
-func (t *T_RFC5426) Write(d []byte) (int,error) {
+func (t *T_RFC5426) Write(d []byte) (int, error) {
 	l := len(d)
 	h := []byte(strconv.Itoa(l))
 	ret := make([]byte, l+len(h)+1)

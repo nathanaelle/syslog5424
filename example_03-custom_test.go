@@ -1,23 +1,20 @@
 package syslog5424
 
 import (
-	"os"
-	"log"
 	"fmt"
-	"time"
+	"log"
+	"os"
 	"sync"
+	"time"
 )
 
-
-const	TEST_SOCKET2 string = "./test-custom.socket"
-
-
+const TEST_SOCKET2 string = "./test-custom.socket"
 
 func ExampleSyslogServerCustom() {
 	defer os.Remove(TEST_SOCKET2)
 
-	wg	:= new(sync.WaitGroup)
-	mutex	:= new(sync.Mutex)
+	wg := new(sync.WaitGroup)
+	mutex := new(sync.Mutex)
 
 	mutex.Lock()
 
@@ -39,16 +36,15 @@ func ExampleSyslogServerCustom() {
 	// <27>1 2014-12-20T14:04:00Z localhost custom-app 1234 - - ERR : doing a last stuff
 }
 
-
-func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex)  {
+func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn,err := (Dialer{
-		QueueLen:	100,
-		FlushDelay:	100*time.Millisecond,
-	}).Dial("unix", TEST_SOCKET2, new(T_RFC5426) )
+	sl_conn, err := (Dialer{
+		QueueLen:   100,
+		FlushDelay: 100 * time.Millisecond,
+	}).Dial("unix", TEST_SOCKET2, new(T_RFC5426))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,14 +64,12 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex)  {
 	sl_conn.End()
 }
 
-
-
-func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex)  {
+func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err	:= (Collector{
-		QueueLen:	100,
-	}).Collect("unix", TEST_SOCKET2, new(T_RFC5426) )
+	collect, err := (Collector{
+		QueueLen: 100,
+	}).Collect("unix", TEST_SOCKET2, new(T_RFC5426))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,7 +86,7 @@ func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex)  {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("%s\n", msg.String() )
+		fmt.Printf("%s\n", msg.String())
 	}
 
 	collect.End()

@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-
 type (
 	// generic interface describing a Connection
 	Conn interface {
@@ -23,37 +22,33 @@ type (
 		Flush() error
 	}
 
-
 	// Sender describe the generic algorithm for sending Message through a connection
 	Sender struct {
-		output		Conn
-		pipeline	chan Message
-		end_completed	chan struct{}
-		ticker		<-chan time.Time
+		output        Conn
+		pipeline      chan Message
+		end_completed chan struct{}
+		ticker        <-chan time.Time
 	}
 
-
-	Addr	struct {
-		network	string
+	Addr struct {
+		network string
 		address string
 	}
 )
 
 // Create a new sender
-func NewSender(output Conn, pipeline chan Message, ticker <-chan time.Time) (*Sender) {
-	s := &Sender {
-		pipeline:	pipeline,
-		end_completed:	make(chan struct{}),
-		output:		output,
-		ticker:		ticker,
+func NewSender(output Conn, pipeline chan Message, ticker <-chan time.Time) *Sender {
+	s := &Sender{
+		pipeline:      pipeline,
+		end_completed: make(chan struct{}),
+		output:        output,
+		ticker:        ticker,
 	}
 
 	go s.run_queue()
 
 	return s
 }
-
-
 
 func (c *Sender) run_queue() {
 	defer func() {
@@ -83,20 +78,16 @@ func (c *Sender) run_queue() {
 	}
 }
 
-
-
 // send a Message to the log_sender goroutine
 func (c *Sender) Send(m Message) {
 	c.pipeline <- m
 }
-
 
 // terminate the log_sender goroutine
 func (c *Sender) End() {
 	close(c.pipeline)
 	<-c.end_completed
 }
-
 
 func (a *Addr) String() string {
 	return a.network + "!" + a.address

@@ -1,23 +1,20 @@
 package syslog5424
 
 import (
-	"os"
-	"log"
 	"fmt"
-	"time"
+	"log"
+	"os"
 	"sync"
+	"time"
 )
 
-
-const	TEST_TCP_SOCKET string = "127.0.0.1:51400"
-
-
+const TEST_TCP_SOCKET string = "127.0.0.1:51400"
 
 func ExampleTCPServer() {
 	defer os.Remove(TEST_SOCKET)
 
-	wg	:= new(sync.WaitGroup)
-	mutex	:= new(sync.Mutex)
+	wg := new(sync.WaitGroup)
+	mutex := new(sync.Mutex)
 
 	mutex.Lock()
 
@@ -25,7 +22,6 @@ func ExampleTCPServer() {
 		t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "2014-12-20T14:04:00Z", time.UTC)
 		return t
 	}
-
 
 	wg.Add(2)
 	go ex_tcp_server(wg, mutex)
@@ -40,13 +36,12 @@ func ExampleTCPServer() {
 	// <27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing a last stuff
 }
 
-
-func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex)  {
+func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn,err := Dial("tcp", TEST_TCP_SOCKET)
+	sl_conn, err := Dial("tcp", TEST_TCP_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,12 +61,10 @@ func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex)  {
 	sl_conn.End()
 }
 
-
-
-func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex)  {
+func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err	:= Collect("tcp", TEST_TCP_SOCKET)
+	collect, err := Collect("tcp", TEST_TCP_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,7 +81,7 @@ func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex)  {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("%s\n", msg.String() )
+		fmt.Printf("%s\n", msg.String())
 	}
 
 	collect.End()

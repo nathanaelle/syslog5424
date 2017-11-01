@@ -1,21 +1,17 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
-
 import (
 	"io"
 	"log"
 	"time"
 )
 
-
 var (
 	// define the Now() function. only usefull in case of test or debug
 	Now func() time.Time = time.Now
 )
 
-
 type (
-
 
 	// Channel interface describe the common API of any logging channel.
 	// a logging channel is a context set for any log message or structured data
@@ -31,7 +27,6 @@ type (
 	// /dev/null Channel
 	devnull struct {
 	}
-
 
 	// a msgChannel describe a channel with a MsgID already set
 	msgChannel struct {
@@ -50,7 +45,6 @@ type (
 	}
 )
 
-
 func (d *trueChannel) AppName(sup string) Channel {
 	var appname string
 
@@ -58,7 +52,7 @@ func (d *trueChannel) AppName(sup string) Channel {
 	case "-":
 		appname = sup
 	default:
-		appname = d.appname +"/"+ sup
+		appname = d.appname + "/" + sup
 	}
 
 	return &trueChannel{msgChannel{
@@ -71,7 +65,6 @@ func (d *trueChannel) AppName(sup string) Channel {
 	}}
 }
 
-
 func (d *trueChannel) Msgid(msgid string) Channel {
 	return &msgChannel{
 		priority: d.priority,
@@ -83,7 +76,6 @@ func (d *trueChannel) Msgid(msgid string) Channel {
 	}
 }
 
-
 func (d *msgChannel) Logger(prefix string) *log.Logger {
 	switch d.priority.Severity() {
 	case LOG_DEBUG:
@@ -93,28 +85,24 @@ func (d *msgChannel) Logger(prefix string) *log.Logger {
 	}
 }
 
-
 func (d *msgChannel) IsDevNull() bool {
 	return false
 }
 
-
 func (c *msgChannel) Write(d []byte) (int, error) {
-	c.output.Send( forge_message(  c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d) ) )
+	c.output.Send(forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d)))
 	return len(d), nil
 }
 
-
 func (c *msgChannel) Log(d string, sd ...interface{}) {
-	msg := forge_message(  c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d) )
+	msg := forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d))
 
-	if len(sd) >0 {
+	if len(sd) > 0 {
 		msg = msg.StructuredData(sd...)
 	}
 
-	c.output.Send( msg )
+	c.output.Send(msg)
 }
-
 
 //	/dev/null Logger
 // Nothing is logged
@@ -122,26 +110,21 @@ func (d *devnull) Logger(prefix string) *log.Logger {
 	return log.New(d, prefix, 0)
 }
 
-
 func (dn *devnull) IsDevNull() bool {
 	return true
 }
-
 
 func (dn *devnull) AppName(string) Channel {
 	return dn
 }
 
-
 func (dn *devnull) Msgid(string) Channel {
 	return dn
 }
 
-
 func (dn *devnull) Write(d []byte) (int, error) {
 	return len(d), nil
 }
-
 
 func (dn *devnull) Log(_ string, _ ...interface{}) {
 }

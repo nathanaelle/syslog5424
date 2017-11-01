@@ -46,7 +46,6 @@ func New(output *Sender, min_priority Priority, appname string) (syslog *Syslog,
 		syslog.pid = "-"
 	}
 
-
 	return syslog, nil
 }
 

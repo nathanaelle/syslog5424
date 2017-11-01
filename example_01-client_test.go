@@ -16,7 +16,7 @@ func ExampleSyslogClient() {
 		return t
 	}
 
-	sl_conn,err := Dial("stdio", "stdout")
+	sl_conn, err := Dial("stdio", "stdout")
 	if err != nil {
 		log.Fatal(err)
 	}
