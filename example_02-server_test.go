@@ -32,8 +32,11 @@ func ExampleSyslogServer() {
 
 	// Output:
 	// <27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing some stuff
+	// Priority=daemon.err, Timestamp=2014-12-20 14:04:00 +0000 UTC, Hostname=localhost, AppName=client-app, ProcID=1234, msgID=-, SD=-, Message=ERR : doing some stuff
 	// <27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing anoter stuff
+	// Priority=daemon.err, Timestamp=2014-12-20 14:04:00 +0000 UTC, Hostname=localhost, AppName=client-app, ProcID=1234, msgID=-, SD=-, Message=ERR : doing anoter stuff
 	// <27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing a last stuff
+	// Priority=daemon.err, Timestamp=2014-12-20 14:04:00 +0000 UTC, Hostname=localhost, AppName=client-app, ProcID=1234, msgID=-, SD=-, Message=ERR : doing a last stuff
 }
 
 func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
@@ -82,6 +85,8 @@ func server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 		}
 
 		fmt.Printf("%s\n", msg.String())
+		fmt.Printf("Priority=%s, Timestamp=%s, Hostname=%s, AppName=%s, ProcID=%s, msgID=%s, SD=%s, Message=%s\n",
+			msg.Priority(), msg.Timestamp(), msg.Hostname(), msg.AppName(), msg.ProcID(), msg.MsgID(), msg.StructuredDataString(), msg.Message())
 	}
 
 	collect.End()

@@ -98,7 +98,7 @@ func (c *msgChannel) Log(d string, sd ...interface{}) {
 	msg := forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d))
 
 	if len(sd) > 0 {
-		msg = msg.StructuredData(sd...)
+		msg = msg.SetStructuredData(sd...)
 	}
 
 	c.output.Send(msg)

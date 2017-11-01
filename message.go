@@ -11,12 +11,12 @@ import (
 )
 
 type Message struct {
-	prio      Priority
+	priority  Priority
 	timestamp time.Time
 	hostname  string
-	appname   string
-	procid    string
-	msgid     string
+	appName   string
+	procID    string
+	msgID     string
 	sd        listStructuredData
 	message   string
 }
@@ -92,9 +92,10 @@ func EmptyMessage() Message {
 	return Message{Priority(0), time.Unix(0, 0), "-", "-", "-", "-", emptyListSD, ""}
 }
 
-// Set the timestamp to time.Now()
-func (msg Message) Now() Message {
-	return Message{msg.prio, time.Now(), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the timestamp to time.SetTimeNow()
+func (msg Message) SetTimeNow() Message {
+	msg.timestamp = time.Now()
+	return msg
 }
 
 func stamp_to_ts(stamp string) time.Time {
@@ -109,9 +110,10 @@ func stamp_to_ts(stamp string) time.Time {
 	return time.Date(year, ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), ts.Nanosecond(), ts.Location())
 }
 
-// Set the timestamp from a time.Stamp string
-func (msg Message) Stamp(stamp string) Message {
-	return Message{msg.prio, stamp_to_ts(stamp), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the timestamp from a time.SetTimeStamp string
+func (msg Message) SetTimeStamp(stamp string) Message {
+	msg.timestamp = stamp_to_ts(stamp)
+	return msg
 }
 
 func delta_boot_to_ts(boot_ts time.Time, s_sec string, s_nsec string) time.Time {
@@ -122,8 +124,9 @@ func delta_boot_to_ts(boot_ts time.Time, s_sec string, s_nsec string) time.Time 
 }
 
 // Set the timestamp from a time elapsed since boot time
-func (msg Message) Delta(boot_ts time.Time, s_sec string, s_nsec string) Message {
-	return Message{msg.prio, delta_boot_to_ts(boot_ts, s_sec, s_nsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+func (msg Message) SetTimeDelta(boot_ts time.Time, s_sec string, s_nsec string) Message {
+	msg.timestamp = delta_boot_to_ts(boot_ts, s_sec, s_nsec)
+	return msg
 }
 
 func epoc_to_ts(s_sec string, s_nsec string) time.Time {
@@ -133,64 +136,106 @@ func epoc_to_ts(s_sec string, s_nsec string) time.Time {
 	return time.Unix(sec, nsec)
 }
 
-// set the date of a Message with a epoch TimeStamp
-func (msg Message) Epoch(s_sec string, s_nsec string) Message {
-	return Message{msg.prio, epoc_to_ts(s_sec, s_nsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the date of a Message with a epoch TimeStamp
+func (msg Message) SetTimeEpoch(s_sec string, s_nsec string) Message {
+	msg.timestamp = epoc_to_ts(s_sec, s_nsec)
+	return msg
 }
 
-// set the app-name of a Message
-func (msg Message) Host(host string) Message {
-	return Message{msg.prio, msg.timestamp, valid_host(host), msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the Hostname of a Message
+func (msg Message) SetHostname(host string) Message {
+	msg.hostname = valid_host(host)
+	return msg
 }
 
-// set the app-name of a Message
-func (msg Message) Time(ts time.Time) Message {
-	return Message{msg.prio, ts, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the Timestamp of a Message
+func (msg Message) SetTime(ts time.Time) Message {
+	msg.timestamp = ts
+	return msg
 }
 
-// set the app-name of a Message
-func (msg Message) AppName(appname string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, valid_app(appname), msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the AppName of a Message
+func (msg Message) SetAppName(appname string) Message {
+	msg.appName = valid_app(appname)
+	return msg
 }
 
-// set the proc-id of a Message
-func (msg Message) ProcID(procid string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, valid_procid(procid), msg.msgid, msg.sd, msg.message}
+// Set the ProcID of a Message
+func (msg Message) SetProcID(procid string) Message {
+	msg.procID = valid_procid(procid)
+	return msg
 }
 
-// set the msg-id of a Message
-func (msg Message) MsgID(msgid string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, valid_msgid(msgid), msg.sd, msg.message}
+// Set the SetMsgID of a Message
+func (msg Message) SetMsgID(msgid string) Message {
+	msg.msgID = valid_msgid(msgid)
+	return msg
 }
 
-// set the priority of a Message
-func (msg Message) Priority(prio Priority) Message {
-	return Message{prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the Priority of a Message
+func (msg Message) SetPriority(prio Priority) Message {
+	msg.priority = prio
+	return msg
 }
 
-//set the hostname as the value get with gethostbyname()
-func (msg Message) LocalHost() Message {
-	return Message{msg.prio, msg.timestamp, hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Set the Hostname as the value obtained with gethostbyname()
+func (msg Message) SetLocalHost() Message {
+	msg.hostname = hostname
+	return msg
 }
 
-//set the message part of a Message
-func (msg Message) Msg(message string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, strings.TrimRightFunc(message, unicode.IsSpace)}
+// Set the Message part of a Message
+func (msg Message) SetMsg(message string) Message {
+	msg.message = strings.TrimRightFunc(message, unicode.IsSpace)
+	return msg
 }
 
-//set the message part of a Message
-func (msg Message) StructuredData(data ...interface{}) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd.Add(data...), msg.message}
+// Set the SetStructuredData part of a Message
+func (msg Message) SetStructuredData(data ...interface{}) Message {
+	msg.sd = msg.sd.Add(data...)
+	return msg
+}
+
+func (msg Message) Priority() string {
+	return msg.priority.String()
+}
+
+func (msg Message) Timestamp() time.Time {
+	return msg.timestamp
+}
+
+func (msg Message) Hostname() string {
+	return msg.hostname
+}
+
+func (msg Message) AppName() string {
+	return msg.appName
+}
+
+func (msg Message) ProcID() string {
+	return msg.procID
+}
+
+func (msg Message) MsgID() string {
+	return msg.msgID
+}
+
+func (msg Message) StructuredDataString() string {
+	return msg.sd.String()
+}
+
+func (msg Message) Message() string {
+	return msg.message
 }
 
 func (msg Message) Marshal5424() []byte {
 	var ret []byte
-	prio := msg.prio.Marshal5424()
+	prio := msg.priority.Marshal5424()
 	ts := []byte(msg.timestamp.Format(RFC5424TimeStamp))
 	sd := msg.sd.marshal5424()
 	switch msg.message {
 	case "":
-		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appname) + len(msg.procid) + len(msg.msgid)
+		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appName) + len(msg.procID) + len(msg.msgID)
 		l += len(sd)
 		l += 6
 
@@ -201,16 +246,16 @@ func (msg Message) Marshal5424() []byte {
 		ret = append(ret, ' ')
 		ret = append(ret, []byte(msg.hostname)...)
 		ret = append(ret, ' ')
-		ret = append(ret, []byte(msg.appname)...)
+		ret = append(ret, []byte(msg.appName)...)
 		ret = append(ret, ' ')
-		ret = append(ret, []byte(msg.procid)...)
+		ret = append(ret, []byte(msg.procID)...)
 		ret = append(ret, ' ')
-		ret = append(ret, []byte(msg.msgid)...)
+		ret = append(ret, []byte(msg.msgID)...)
 		ret = append(ret, ' ')
 		ret = append(ret, sd...)
 
 	default:
-		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appname) + len(msg.procid) + len(msg.msgid)
+		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appName) + len(msg.procID) + len(msg.msgID)
 		l += len(sd) + len(msg.message)
 		l += 7
 
@@ -221,11 +266,11 @@ func (msg Message) Marshal5424() []byte {
 		ret = append(ret, ' ')
 		ret = append(ret, []byte(msg.hostname)...)
 		ret = append(ret, ' ')
-		ret = append(ret, []byte(msg.appname)...)
+		ret = append(ret, []byte(msg.appName)...)
 		ret = append(ret, ' ')
-		ret = append(ret, []byte(msg.procid)...)
+		ret = append(ret, []byte(msg.procID)...)
 		ret = append(ret, ' ')
-		ret = append(ret, []byte(msg.msgid)...)
+		ret = append(ret, []byte(msg.msgID)...)
 		ret = append(ret, ' ')
 		ret = append(ret, sd...)
 		ret = append(ret, ' ')
