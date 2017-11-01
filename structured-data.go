@@ -9,7 +9,7 @@ import (
 //	http://www.iana.org/assignments/syslog-parameters/syslog-parameters.xhtml#syslog-parameters-4
 
 type (
-		listStructuredData []interface{}
+	listStructuredData []interface{}
 
 	SDUnmarshaler interface {
 		Unmarshal5424([]byte) error
@@ -18,8 +18,6 @@ type (
 	SDMarshaler interface {
 		Marshal5424() ([]byte, error)
 	}
-
-
 
 	SDPEN interface {
 		GetPEN() uint64
@@ -34,29 +32,27 @@ var (
 	emptyListSD     = listStructuredData([]interface{}{})
 )
 
-
 // Append data to a list of structured data
 func (listSD listStructuredData) Add(data ...interface{}) listStructuredData {
 	return listStructuredData(append([]interface{}(listSD), data...))
 }
-
 
 func (listSD listStructuredData) marshal5424() []byte {
 	if len(listSD) == 0 {
 		return []byte{'-'}
 	}
 
-	ret_s	:= 0
-	t_a	:= make([][]byte, len(listSD))
+	ret_s := 0
+	t_a := make([][]byte, len(listSD))
 	for i, sd := range listSD {
-		t:= MarshalSD(sd)
-		ret_s	+= len(t)
-		t_a[i]	= t
+		t := MarshalSD(sd)
+		ret_s += len(t)
+		t_a[i] = t
 	}
 
-	ret	:= make([]byte, 0, ret_s)
-	for _,sd := range t_a {
-		ret = append( ret, sd... )
+	ret := make([]byte, 0, ret_s)
+	for _, sd := range t_a {
+		ret = append(ret, sd...)
 	}
 
 	return ret
@@ -65,8 +61,6 @@ func (listSD listStructuredData) marshal5424() []byte {
 func (listSD listStructuredData) String() string {
 	return string(listSD.marshal5424())
 }
-
-
 
 // tagOptions is the string following a comma in a struct field's "sd5424"
 // tag, or the empty string. It does not include the leading comma.

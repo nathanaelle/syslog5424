@@ -1,42 +1,40 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"time"
 	"errors"
+	"time"
 )
 
-type	(
+type (
 	Dialer struct {
 		// length of the queue to the log_sender goroutine
-		QueueLen	int
+		QueueLen int
 
 		// delay to flush the queue
-		FlushDelay	time.Duration
+		FlushDelay time.Duration
 	}
 )
-
 
 // Dial opens a connection to the syslog daemon
 // network can be "stdio", "unix", "unixgram", "tcp", "tcp4", "tcp6"
 // used Transport is the "common" transport for the network.
 // QueueLen is preset to 100 Message
 // FlushDelay is preset to 500ms
-func Dial(network, address string) (*Sender,error) {
+func Dial(network, address string) (*Sender, error) {
 	return (Dialer{
-		QueueLen:	100,
-		FlushDelay:	500*time.Millisecond,
+		QueueLen:   100,
+		FlushDelay: 500 * time.Millisecond,
 	}).Dial(network, address, nil)
 }
-
 
 // Dial opens a connection to the syslog daemon
 // network can be "stdio", "unix", "unixgram", "tcp", "tcp4", "tcp6"
 // Transport can be nil.
 // if Transport is nil the "common" transport for the wished network is used.
-func (d Dialer) Dial(network, address string, t Transport) (*Sender,error) {
-	var pipeline	chan Message
-	var ticker	<-chan time.Time
-	var c		Conn
+func (d Dialer) Dial(network, address string, t Transport) (*Sender, error) {
+	var pipeline chan Message
+	var ticker <-chan time.Time
+	var c Conn
 
 	switch network {
 	case "stdio":
@@ -64,7 +62,7 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender,error) {
 		c = tcp_dial(network, address)
 
 	default:
-		return nil, errors.New("unknown network for Dial : "+network)
+		return nil, errors.New("unknown network for Dial : " + network)
 	}
 
 	if c == nil {
@@ -82,10 +80,10 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender,error) {
 	switch {
 	case d.FlushDelay <= time.Millisecond:
 		// less than 1ms => disable auto flush
-		ticker	= make(chan time.Time)
+		ticker = make(chan time.Time)
 
 	default:
-		ticker	= time.Tick(d.FlushDelay)
+		ticker = time.Tick(d.FlushDelay)
 	}
 
 	t.SetConn(c)

@@ -4,39 +4,36 @@ import (
 	"os"
 )
 
-
 type (
 	fd_conn struct {
-		address 	string
-		network		string
-		reader		*buffer
-		writer		*buffer
+		address string
+		network string
+		reader  *buffer
+		writer  *buffer
 	}
 )
-
 
 // dialer that only forward to stderr
 func stdio_dial(addr string) Conn {
 	s := new(fd_conn)
 
-	s.address	= addr
-	s.network	= "stdio"
+	s.address = addr
+	s.network = "stdio"
 
 	switch addr {
 	case "stderr":
-		s.writer	= new_buffer(1<<12, buffer_write, os.Stderr)
+		s.writer = new_buffer(1<<12, buffer_write, os.Stderr)
 
 	case "stdout":
-		s.writer	= new_buffer(1<<12, buffer_write, os.Stdout)
+		s.writer = new_buffer(1<<12, buffer_write, os.Stdout)
 
 	// TODO implement file logging here
 	default:
 		return nil
 	}
 
-	return	s
+	return s
 }
-
 
 func (c *fd_conn) Write(data []byte) (n int, err error) {
 	var t_n int
@@ -50,15 +47,13 @@ func (c *fd_conn) Write(data []byte) (n int, err error) {
 	return
 }
 
-
 func (c *fd_conn) Read(data []byte) (int, error) {
 	return c.reader.Read(data)
 }
 
-
 func (c *fd_conn) Redial() error {
 	switch c.address {
-	case "stderr","stdout":
+	case "stderr", "stdout":
 		return nil
 
 	// TODO implement file logging here
@@ -66,7 +61,6 @@ func (c *fd_conn) Redial() error {
 		return nil
 	}
 }
-
 
 func (c *fd_conn) Flush() error {
 	if c.writer != nil {
@@ -78,12 +72,11 @@ func (c *fd_conn) Flush() error {
 	return nil
 }
 
-
 func (c *fd_conn) Close() error {
 	c.Flush()
 
 	switch c.address {
-	case "stderr","stdout":
+	case "stderr", "stdout":
 		return nil
 
 	// TODO implement file logging here

@@ -3,13 +3,13 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
+	"errors"
 	"io"
 	"net"
-	"errors"
 )
 
 func (c *local_conn) os_redial() (io.ReadWriteCloser, error) {
-	logTypes := []string{"unix","unixgram"}
+	logTypes := []string{"unix", "unixgram"}
 	logPaths := []string{"/dev/log", "/var/run/syslog", "/var/run/log"}
 
 	if c.address != "" && c.network != "" {
@@ -21,10 +21,10 @@ func (c *local_conn) os_redial() (io.ReadWriteCloser, error) {
 			conn, err := net.Dial(network, c.address)
 			if err == nil {
 				c.network = network
-				return conn,nil
+				return conn, nil
 			}
 		}
-		return nil,errors.New("no connection established")
+		return nil, errors.New("no connection established")
 	}
 
 	for _, network := range logTypes {
@@ -33,9 +33,9 @@ func (c *local_conn) os_redial() (io.ReadWriteCloser, error) {
 			if err == nil {
 				c.network = network
 				c.address = path
-				return conn,nil
+				return conn, nil
 			}
 		}
 	}
-	return nil,errors.New("no connection established")
+	return nil, errors.New("no connection established")
 }
