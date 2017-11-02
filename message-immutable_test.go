@@ -36,6 +36,5 @@ func TestMessageImmutableParse(t *testing.T) {
 			t.Errorf("Writable: expected {{ %q }} got {{ %q }}", tt, msg)
 			continue
 		}
-
 	}
 }

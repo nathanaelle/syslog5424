@@ -66,7 +66,7 @@ var sd_t []SDTest = []SDTest{
 		GenericSD(origin{"ip": []string{"192.0.2.1", "192.0.2.129"}}),
 	},
 	InvalidUnmarshal{`[ exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`},
-	InvalidUnmarshal{`[exampleSDID iut="3" eventSource="Application" eventID="1011"]`},
+	InvalidUnmarshal{`[exampleSDID iut="3" eventSource ="Application" eventID="1011"]`},
 }
 
 func TestStructuredData(t *testing.T) {

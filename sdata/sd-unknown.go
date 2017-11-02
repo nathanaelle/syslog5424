@@ -1,13 +1,14 @@
 package sdata // import "github.com/nathanaelle/syslog5424/sdata"
 
-import ()
-
 type (
 	unknownDef struct{}
 
 	unknownSD struct {
 		Name string
-		Map  map[string][]string
+		Map  []struct{
+			K	string
+			V	string
+		}
 	}
 )
 
@@ -56,7 +57,7 @@ func (_ unknownDef) Found(data []byte) (StructuredData, bool) {
 		return unknownSD{header, nil}, true
 	}
 
-	ret := unknownSD{header, make(map[string][]string)}
+	ret := unknownSD{header, nil}
 
 	for len(data) > 0 {
 		var err error
@@ -75,7 +76,7 @@ func (_ unknownDef) Found(data []byte) (StructuredData, bool) {
 		}
 		data = step2
 
-		ret.Map[name] = append(ret.Map[name], value)
+		ret.Map = append(ret.Map, struct {K,V string} {name, value})
 	}
 
 	return ret, true
@@ -88,10 +89,8 @@ func (_ unknownSD) SDID() SDID {
 func (sd unknownSD) Marshal5424() ([]byte, error) {
 	ret := "[" + sd.Name
 
-	for key, values := range sd.Map {
-		for _, val := range values {
-			ret += " " + key + "=\"" + val + "\""
-		}
+	for _, pair := range sd.Map {
+		ret += " " + pair.K + "=\"" + pair.V + "\""
 	}
 
 	ret += "]"

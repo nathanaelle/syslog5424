@@ -4,7 +4,6 @@ import (
 	"./sdata"
 	"bytes"
 	"errors"
-	"log"
 	"time"
 )
 
@@ -53,7 +52,7 @@ func Parse(data []byte) (msg MessageImmutable, err error) {
 	for len(data) > 0 && parts < 6 {
 		end, err := search_next_sep(data[begin:], sep_sp)
 		if err != nil {
-			log.Printf("%s index %#d parts %d rest %s ", string(msg.buffer), msg.index, parts, data[begin:])
+			//log.Printf("%s index %#d parts %d rest %s ", string(msg.buffer), msg.index, parts, data[begin:])
 			return err_msg, err
 		}
 		msg.index = append(msg.index, begin+end)
@@ -110,7 +109,7 @@ func Parse(data []byte) (msg MessageImmutable, err error) {
 			return err_msg, ERR_Invalid
 
 		case ERR_PosNotFound:
-			msg.text = begin
+			msg.text = begin+1
 			err = nil
 			return
 
@@ -185,9 +184,7 @@ func (msg MessageImmutable) StructuredData() (lsd sdata.List) {
 
 	for len(lsd_index) > 0 {
 		end := lsd_index[0]
-		log.Printf("{%q}\n", string(msg.buffer[begin:end]))
 		sd, ok := sdata.Parse(msg.buffer[begin:end])
-		log.Printf("%v %v\n", sd, ok)
 		if ok {
 			lsd = lsd.Add(sd)
 		}

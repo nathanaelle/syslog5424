@@ -20,7 +20,6 @@ func NextHeader(data []byte) (header string, ret []byte, err error) {
 			if length == 0 {
 				return "", nil, fmt.Errorf("unexpected space")
 			}
-			ret = ret[1:]
 			header = string(data[0:length])
 			return
 		}
