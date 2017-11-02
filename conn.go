@@ -70,7 +70,11 @@ func (c *Sender) run_queue() {
 				return
 			}
 
-			_, err := c.output.Write(msg.Marshal5424())
+			raw, err := msg.Marshal5424()
+			if err != nil {
+				log.Fatal(err)
+			}
+			_, err = c.output.Write(raw)
 			if err != nil {
 				log.Fatal(err)
 			}

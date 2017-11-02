@@ -131,7 +131,7 @@ func (r *Receiver) ReceiveRaw() ([]byte, bool) {
 	return b, end
 }
 
-func (r *Receiver) Receive() (Message, error, bool) {
+func (r *Receiver) Receive() (MessageImmutable, error, bool) {
 	b, end := r.ReceiveRaw()
 	msg, err := Parse(b)
 

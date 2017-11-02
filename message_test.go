@@ -1,6 +1,8 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
+	"./sdata"
+	tq "./sdata/timequality"
 	"math"
 	"testing"
 	"time"
@@ -13,24 +15,17 @@ type MessageTest struct {
 
 var messageTest = []MessageTest{
 	{
-		Message{Priority(0), z_epoch(), "-", "-", "-", "-", emptyListSD, ""},
+		Message{Priority(0), z_epoch(), "-", "-", "-", "-", emptyListSD(), ""},
 		"<0>1 1970-01-01T01:00:00Z - - - - -",
 	},
 	{
-		Message{Priority(0), z_epoch(), "-", "-", "-", "-", []interface{}{timeQuality{pint(1), pint(1), nil}}, ""},
+		Message{Priority(0), z_epoch(), "-", "-", "-", "-", sdata.List{tq.TimeQuality{true, true, nil}}, ""},
 		`<0>1 1970-01-01T01:00:00Z - - - - [timeQuality tzKnown="1" isSynced="1"]`,
 	},
 	{
-		Message{Priority(24), z_epoch(), "bla", "bli", "blu", "blo", emptyListSD, "message"},
+		Message{Priority(24), z_epoch(), "bla", "bli", "blu", "blo", emptyListSD(), "message"},
 		"<24>1 1970-01-01T01:00:00Z bla bli blu blo - message",
 	},
-}
-
-var parseTest = []string{
-	"<0>1 1970-01-01T01:00:00+01:00 - - - - -",
-	"<12>1 1970-01-01T01:00:00Z - - - - -",
-	"<0>1 1970-01-01T01:00:00Z bla bli blu blo - message",
-	"<234>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
 }
 
 func z_epoch() time.Time {
@@ -43,18 +38,6 @@ func Test_Message(t *testing.T) {
 		a := tt.m.String()
 		if a != tt.a {
 			t.Errorf(" %v String() = %s; want %s", tt.m, a, tt.a)
-			continue
-		}
-	}
-
-	for _, tt := range parseTest {
-		a, err := Parse([]byte(tt))
-		if err != nil {
-			t.Errorf(" %s parse() %s", tt, err)
-		}
-
-		if a.String() != tt {
-			t.Errorf(" %s parse() %+v [%s]", tt, a, a.String())
 			continue
 		}
 	}

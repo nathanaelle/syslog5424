@@ -1,8 +1,7 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"bytes"
-	"errors"
+	"./sdata"
 	"os"
 	"strconv"
 	"strings"
@@ -17,7 +16,7 @@ type Message struct {
 	appname   string
 	procid    string
 	msgid     string
-	sd        listStructuredData
+	sd        sdata.List
 	message   string
 }
 
@@ -26,70 +25,25 @@ const RFC5424TimeStamp string = "2006-01-02T15:04:05.999999Z07:00"
 
 var hostname, _ = os.Hostname()
 
-func Parse(data []byte) (Message, error) {
-	parts := bytes.SplitN(data, []byte{' '}, 8)
-
-	switch len(parts) {
-	case 7:
-		prio := new(Priority)
-		err := prio.Unmarshal5424(parts[0])
-		if err != nil {
-			return EmptyMessage(), errors.New("Wrong Priority : " + err.Error() + " : [" + string(parts[0]) + "]")
-		}
-
-		ts, err := time.Parse(RFC5424TimeStamp, string(parts[1]))
-		if err != nil {
-			return EmptyMessage(), errors.New("Wrong TS :" + string(parts[1]))
-		}
-
-		if string(parts[6]) == "-" {
-			return Message{*prio, ts, string(parts[2]), string(parts[3]), string(parts[4]), string(parts[5]), emptyListSD, ""}, nil
-		}
-
-		return Message{*prio, ts, string(parts[2]), string(parts[3]), string(parts[4]), string(parts[5]), emptyListSD, ""}, nil
-
-	case 8:
-		prio := new(Priority)
-		err := prio.Unmarshal5424(parts[0])
-		if err != nil {
-			return EmptyMessage(), errors.New("Wrong Priority : " + err.Error() + " : [" + string(parts[0]) + "]")
-		}
-
-		ts, err := time.Parse(RFC5424TimeStamp, string(parts[1]))
-		if err != nil {
-			return EmptyMessage(), errors.New("Wrong TS :" + string(parts[1]))
-		}
-
-		if string(parts[6]) == "-" {
-			return Message{*prio, ts, string(parts[2]), string(parts[3]), string(parts[4]), string(parts[5]), emptyListSD, string(parts[7])}, nil
-		}
-
-		return Message{*prio, ts, string(parts[2]), string(parts[3]), string(parts[4]), string(parts[5]), emptyListSD, string(parts[7])}, nil
-
-	default:
-		return EmptyMessage(), errors.New("Wrong message :" + string(data))
-	}
-}
-
 // Create a Message with the timestamp, hostname, appname, the priority and the message preset
 func CreateMessage(appname string, prio Priority, message string) Message {
-	return Message{prio, time.Now(), hostname, valid_app(appname), "-", "-", emptyListSD, strings.TrimRightFunc(message, unicode.IsSpace)}
+	return Message{prio, time.Now(), hostname, valid_app(appname), "-", "-", sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
 // Create a whole Message
 func CreateWholeMessage(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
-	return Message{prio, ts, valid_host(host), valid_app(app), valid_procid(pid), valid_msgid(msgid), emptyListSD, strings.TrimRightFunc(message, unicode.IsSpace)}
+	return Message{prio, ts, valid_host(host), valid_app(app), valid_procid(pid), valid_msgid(msgid), sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
 // Forge a whole Message
 // hidden func because there is bypass
 func forge_message(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
-	return Message{prio, ts, host, app, pid, msgid, emptyListSD, strings.TrimRightFunc(message, unicode.IsSpace)}
+	return Message{prio, ts, host, app, pid, msgid, sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
 // Create an empty Message
 func EmptyMessage() Message {
-	return Message{Priority(0), time.Unix(0, 0), "-", "-", "-", "-", emptyListSD, ""}
+	return Message{Priority(0), time.Unix(0, 0), "-", "-", "-", "-", sdata.EmptyList(), ""}
 }
 
 // Set the timestamp to time.Now()
@@ -110,7 +64,7 @@ func stamp_to_ts(stamp string) time.Time {
 }
 
 // Set the timestamp from a time.Stamp string
-func (msg Message) Stamp(stamp string) Message {
+func (msg Message) Timestamp(stamp string) Message {
 	return Message{msg.prio, stamp_to_ts(stamp), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
@@ -179,15 +133,18 @@ func (msg Message) Msg(message string) Message {
 }
 
 //set the message part of a Message
-func (msg Message) StructuredData(data ...interface{}) Message {
+func (msg Message) StructuredData(data ...sdata.StructuredData) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd.Add(data...), msg.message}
 }
 
-func (msg Message) Marshal5424() []byte {
+func (msg Message) Marshal5424() ([]byte, error) {
 	var ret []byte
 	prio := msg.prio.Marshal5424()
 	ts := []byte(msg.timestamp.Format(RFC5424TimeStamp))
-	sd := msg.sd.marshal5424()
+	sd, err := msg.sd.Marshal5424()
+	if err != nil {
+		return nil, err
+	}
 	switch msg.message {
 	case "":
 		l := len(prio) + len(ts) + len(msg.hostname) + len(msg.appname) + len(msg.procid) + len(msg.msgid)
@@ -231,9 +188,11 @@ func (msg Message) Marshal5424() []byte {
 		ret = append(ret, ' ')
 		ret = append(ret, []byte(msg.message)...)
 	}
-	return ret
+	return ret, nil
 }
 
-func (msg Message) String() string {
-	return string(msg.Marshal5424())
+func (msg Message) String() (s string) {
+	res, _ := msg.Marshal5424()
+	s = string(res)
+	return
 }

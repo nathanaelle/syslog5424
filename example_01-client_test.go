@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type someSD struct {
-	Message string
-	Errno   int
-}
-
 func ExampleSyslogClient() {
 	Now = func() time.Time {
 		t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "2014-12-20T14:04:00Z", time.UTC)
@@ -39,12 +34,29 @@ func ExampleSyslogClient() {
 	logger_err_conf.Print("doing some stuff")
 
 	// using internal API
-	conflog.Channel(LOG_ERR).Log("another message with structured data", someSD{"some message", 42})
+	conflog.Channel(LOG_ERR).Log("another message with structured data", GenericSD(someSD{"some message", 42}))
 
 	// closing the connection and flushing all remaining logs
 	sl_conn.End()
 
 	// Output:
 	// <27>1 2014-12-20T14:04:00Z localhost test-app/configuration 1234 - - ERR : doing some stuff
-	// <27>1 2014-12-20T14:04:00Z localhost test-app/configuration 1234 - [someSD Message="some message" Errno="42"] another message with structured data
+	// <27>1 2014-12-20T14:04:00Z localhost test-app/configuration 1234 - [someSD@32473 Message="some message" Errno="42"] another message with structured data
+}
+
+type someSD struct {
+	Message string
+	Errno   int
+}
+
+func (someSD) GetPEN() uint64 {
+	return uint64(32473)
+}
+
+func (someSD) IsIANA() bool {
+	return false
+}
+
+func (someSD) String() string {
+	return "someSD@32473"
 }

@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package sdata // import "github.com/nathanaelle/syslog5424/sdata"
 
 import (
 	"fmt"

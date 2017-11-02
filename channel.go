@@ -1,6 +1,7 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
+	"./sdata"
 	"io"
 	"log"
 	"time"
@@ -21,7 +22,7 @@ type (
 		AppName(string) Channel
 		Msgid(string) Channel
 		Logger(string) *log.Logger
-		Log(string, ...interface{})
+		Log(string, ...sdata.StructuredData)
 	}
 
 	// /dev/null Channel
@@ -94,7 +95,7 @@ func (c *msgChannel) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
-func (c *msgChannel) Log(d string, sd ...interface{}) {
+func (c *msgChannel) Log(d string, sd ...sdata.StructuredData) {
 	msg := forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d))
 
 	if len(sd) > 0 {
@@ -126,5 +127,5 @@ func (dn *devnull) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
-func (dn *devnull) Log(_ string, _ ...interface{}) {
+func (dn *devnull) Log(_ string, _ ...sdata.StructuredData) {
 }
