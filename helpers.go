@@ -1,7 +1,5 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
-import ()
-
 func valid_host(d string) string {
 	return validator_generic([]byte(d), 255)
 }

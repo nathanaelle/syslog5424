@@ -66,34 +66,34 @@ PASS
 func Benchmark_MessageImmutable_Parse_Minimal(b *testing.B) {
 	data := []byte(`<0>1 1970-01-01T01:00:00+01:00 - - - - -`)
 	for i := 0; i < b.N; i++ {
-			Parse(data)
+		Parse(data)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_MessageNoSD(b *testing.B) {
 	data := []byte(`<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.`)
 	for i := 0; i < b.N; i++ {
-			Parse(data)
+		Parse(data)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_KnownSDOnly(b *testing.B) {
 	data := []byte(`<0>1 1970-01-01T01:00:00Z - - - - [timeQuality tzKnown="1" isSynced="1"]`)
 	for i := 0; i < b.N; i++ {
-			Parse(data)
+		Parse(data)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_UnkownSDOnly(b *testing.B) {
 	data := []byte(`<0>1 1970-01-01T01:00:00Z - - - - [timeQualitat tzKnown="1" isSynced="1"]`)
 	for i := 0; i < b.N; i++ {
-			Parse(data)
+		Parse(data)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_MessageAndSD(b *testing.B) {
 	data := []byte(`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"] Some log message with structured data`)
 	for i := 0; i < b.N; i++ {
-			Parse(data)
+		Parse(data)
 	}
 }

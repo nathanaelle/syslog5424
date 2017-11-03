@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-
-
 type PriorityTest struct {
 	a string
 	p Priority
@@ -20,8 +18,8 @@ func Test_Priority(t *testing.T) {
 	}
 
 	l_val := []PriorityTest{
-		PriorityTest{"kern.emerg", Priority(0)},
-		PriorityTest{"user.debug", Priority(15)},
+		{"kern.emerg", Priority(0)},
+		{"user.debug", Priority(15)},
 	}
 
 	d := new(Priority)
@@ -51,7 +49,7 @@ func Test_Priority_Marshal5424(t *testing.T) {
 
 	for i < 256 {
 		z := Priority(i)
-		m,err := z.Marshal5424()
+		m, err := z.Marshal5424()
 		if err != nil {
 			t.Errorf("%d marshal got err: %v", err)
 			return
@@ -94,7 +92,6 @@ func Benchmark_Priority_Set(b *testing.B) {
 	}
 }
 
-
 func Benchmark_Priority_String(b *testing.B) {
 	p := Priority(15)
 	for i := 0; i < b.N; i++ {
@@ -107,7 +104,7 @@ func Benchmark_Priority_String(b *testing.B) {
 func Benchmark_Priority_Marshal5424(b *testing.B) {
 	p := Priority(15)
 	for i := 0; i < b.N; i++ {
-		if b, err := p.Marshal5424(); err != nil || string(b) != "<15>1"{
+		if b, err := p.Marshal5424(); err != nil || string(b) != "<15>1" {
 			panic("benchmark expect valid marshal")
 		}
 	}

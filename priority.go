@@ -129,7 +129,7 @@ func (p Priority) String() string {
 	return facility_string[p.Facility()>>3] + "." + severity_string[p.Severity()]
 }
 
-func (p Priority) Marshal5424() (data []byte,err error) {
+func (p Priority) Marshal5424() (data []byte, err error) {
 	u := byte(int(p) % 10)
 	d := byte(int(p)%100 - (int(p) % 10))
 	c := byte(int(p) - (int(p) % 100))

@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-
-
 type (
 	// MessageImmutable is an incoming message from a remote agent.
 	// So it's a read only structure.
@@ -113,7 +111,7 @@ func Parse(data []byte) (msg MessageImmutable, err error) {
 			return err_msg, ERR_Invalid
 
 		case ERR_PosNotFound:
-			msg.text = begin+1
+			msg.text = begin + 1
 			err = nil
 			return
 

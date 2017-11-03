@@ -5,9 +5,9 @@ type (
 
 	unknownSD struct {
 		Name string
-		Map  []struct{
-			K	string
-			V	string
+		Map  []struct {
+			K string
+			V string
 		}
 	}
 )
@@ -76,7 +76,7 @@ func (_ unknownDef) Found(data []byte) (StructuredData, bool) {
 		}
 		data = step2
 
-		ret.Map = append(ret.Map, struct {K,V string} {name, value})
+		ret.Map = append(ret.Map, struct{ K, V string }{name, value})
 	}
 
 	return ret, true

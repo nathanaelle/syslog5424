@@ -6,8 +6,6 @@ import (
 	"../../sdata"
 )
 
-type ()
-
 func pint(a int) *int {
 	return &a
 }
