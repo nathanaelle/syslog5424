@@ -69,7 +69,7 @@ func main() {
   * [x] Unix Datagram Transport
   * [x] NULL terminated Transport
   * [x] LF terminated Transport
-  * [x] RFC 5426 Transport
+  * [x] RFC 5425 Transport
 
 ### Structured Data
 
@@ -115,10 +115,23 @@ This is a textual serialization of simple struct or map[string]string.
 This serialization is _typed_ or _named_ and one text message can convey many Structured Data entries.
 So This is a very pertinent way to mix *metrics*, *keywords* and human readable messages.
 
+### What there is no support of UDP (RFC 5426) ?
+
+System logging must be reliable for security audit of the log.
+UDP is an unreliable protocol because UDP packet can be dropped, and neither the client nor the server will be informed of the missing data.
+
 ### Why remove parts of code about TLS ?
 
 TLS is supported because the networing is implemented as interfaces.
 but my idea of "security" is not compatible with maintaining duplicate code.
+
+The requirement to support TLS are :
+
+1. verify the certificate validity
+2. verify the chain of trust to the root
+3. verify OSCP staple if provided
+4. check the OSCP's response from the CA
+5. verify the CT with the OSCP's CT information and/or CT extra TLS header
 
 so, you can :
 
@@ -129,4 +142,3 @@ so, you can :
 
   * Write documentation
   * Write comments
-  * Clean ugly stuff
