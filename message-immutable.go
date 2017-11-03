@@ -7,7 +7,11 @@ import (
 	"time"
 )
 
+
+
 type (
+	// MessageImmutable is an incoming message from a remote agent.
+	// So it's a read only structure.
 	MessageImmutable struct {
 		buffer []byte
 		index  []int

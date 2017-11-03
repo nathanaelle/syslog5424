@@ -139,7 +139,11 @@ func (msg Message) StructuredData(data ...sdata.StructuredData) Message {
 
 func (msg Message) Marshal5424() ([]byte, error) {
 	var ret []byte
-	prio := msg.prio.Marshal5424()
+	prio, err := msg.prio.Marshal5424()
+	if err != nil {
+		return nil, err
+	}
+
 	ts := []byte(msg.timestamp.Format(RFC5424TimeStamp))
 	sd, err := msg.sd.Marshal5424()
 	if err != nil {

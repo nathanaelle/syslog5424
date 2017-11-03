@@ -43,45 +43,6 @@ func Test_Message(t *testing.T) {
 	}
 }
 
-func Benchmark_Message_Parse(b *testing.B) {
-	max := int(math.Ceil(float64(b.N) / float64(len(parseTest))))
-	for i := 0; i < max; i++ {
-		for _, tt := range parseTest {
-			Parse([]byte(tt))
-		}
-	}
-}
-
-func Benchmark_Message_Chan(b *testing.B) {
-	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
-	ch := make(chan Message)
-	go func() {
-		for {
-			<-ch
-		}
-	}()
-	for i := 0; i < max; i++ {
-		for _, tt := range messageTest {
-			ch <- tt.m
-		}
-	}
-}
-
-func Benchmark_Message_ChanBuf(b *testing.B) {
-	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
-	ch := make(chan Message, 100)
-	go func() {
-		for {
-			<-ch
-		}
-	}()
-	for i := 0; i < max; i++ {
-		for _, tt := range messageTest {
-			ch <- tt.m
-		}
-	}
-}
-
 func Benchmark_Message_String(b *testing.B) {
 	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
 	for i := 0; i < max; i++ {
