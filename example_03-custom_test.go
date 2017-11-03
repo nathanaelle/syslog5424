@@ -44,7 +44,7 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	sl_conn, err := (Dialer{
 		QueueLen:   100,
 		FlushDelay: 100 * time.Millisecond,
-	}).Dial("unix", TEST_SOCKET2, new(T_RFC5426))
+	}).Dial("unix", TEST_SOCKET2, new(T_RFC5425))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	collect, err := (Collector{
 		QueueLen: 100,
-	}).Collect("unix", TEST_SOCKET2, new(T_RFC5426))
+	}).Collect("unix", TEST_SOCKET2, new(T_RFC5425))
 	if err != nil {
 		log.Fatal(err)
 	}

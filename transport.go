@@ -21,10 +21,10 @@ type (
 		gen_t
 	}
 
-	// Encode frame in RFC 5426 formated frame
-	// RFC 5426 Format format is :
+	// Encode frame in RFC 5425 formated frame
+	// RFC 5425 Format format is :
 	// len([]byte) ' ' []byte
-	T_RFC5426 struct {
+	T_RFC5425 struct {
 		gen_t
 	}
 
@@ -114,8 +114,8 @@ func (t *T_LFENDED) String() string {
 	return "lf ended transport"
 }
 
-func (t *T_RFC5426) String() string {
-	return "rfc 5426 transport"
+func (t *T_RFC5425) String() string {
+	return "rfc 5425 transport"
 }
 
 // split function for NULL terminated message
@@ -169,8 +169,8 @@ func (t *T_LFENDED) Write(d []byte) (int, error) {
 	return t.write_conn(append(d, '\n'))
 }
 
-// split function for RFC 5426 message
-func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
+// split function for RFC 5425 message
+func (t *T_RFC5425) Split(data []byte, atEOF bool) (int, []byte, error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
@@ -181,19 +181,19 @@ func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
 
 	sep_pos := bytes.IndexByte(data, ' ')
 	if sep_pos <= 0 {
-		return 0, nil, errors.New("T_RFC5426 Split: no header len")
+		return 0, nil, errors.New("T_RFC5425 Split: no header len")
 	}
 
 	msg_len, err := strconv.Atoi(string(data[0:sep_pos]))
 	if err != nil {
-		return 0, nil, errors.New("T_RFC5426 Split: invalid header len")
+		return 0, nil, errors.New("T_RFC5425 Split: invalid header len")
 	}
 
 	start := sep_pos + 1
 	buf_len := start + msg_len
 	if len(data) < buf_len {
 		if atEOF {
-			return 0, nil, errors.New("T_RFC5426 Split: incomplete message")
+			return 0, nil, errors.New("T_RFC5425 Split: incomplete message")
 		}
 		return 0, nil, nil
 	}
@@ -201,9 +201,9 @@ func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
 	return buf_len, data[start:buf_len], nil
 }
 
-// Write a RFC 5426 formated message
+// Write a RFC 5425 formated message
 // see (Conn interface)[#Conn]
-func (t *T_RFC5426) Write(d []byte) (int, error) {
+func (t *T_RFC5425) Write(d []byte) (int, error) {
 	l := len(d)
 	h := []byte(strconv.Itoa(l))
 	ret := make([]byte, l+len(h)+1)

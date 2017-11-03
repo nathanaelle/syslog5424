@@ -25,10 +25,10 @@ func Test_Burst(t *testing.T) {
 	seq := []burst_tok{
 		{"ulf", "unix", new(T_LFENDED)},
 		{"uzero", "unix", new(T_ZEROENDED)},
-		{"u5426", "unix", new(T_RFC5426)},
+		{"u5425", "unix", new(T_RFC5425)},
 		{"dlf", "unixgram", new(T_LFENDED)},
 		{"dzero", "unixgram", new(T_ZEROENDED)},
-		{"d5426", "unixgram", new(T_RFC5426)},
+		{"d5425", "unixgram", new(T_RFC5425)},
 	}
 
 	for _, s := range seq {
