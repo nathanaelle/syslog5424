@@ -53,8 +53,7 @@ func main() {
   * [x] Encode RFC 5424 Message
   * [x] Decode RFC 5424 Message
   * [x] Encode Structured Data
-  * [x] Encode Private Structured Data
-  * [ ] Decode Structured Data
+  * [x] Decode Structured Data
 
 ### Networking / Communication
 
@@ -71,6 +70,31 @@ func main() {
   * [x] NULL terminated Transport
   * [x] LF terminated Transport
   * [x] RFC 5426 Transport
+
+### Structured Data
+
+  * [x] Encode Structured Data
+  * [x] Decode Structured Data
+  * [x] Encode Private Structured Data
+  * [x] Decode Private Structured Data
+  * [x] Decode Unknown Structured Data
+  * [x] Structured Data Interface
+  * [x] SDID Interface
+  * [ ] SDIDLight Interface for Light Structured Data Support
+
+### Structured Data Type
+
+Source : [IANA syslog Structured Data ID Values](https://www.iana.org/assignments/syslog-parameters/syslog-parameters.xhtml#syslog-parameters-4)
+
+  * [x] timeQuality (RFC 5424)
+  * [ ] meta (RFC 5424)
+  * [ ] origin (RFC 5424)
+  * [ ] snmp (RFC 5675)
+  * [ ] alarm (RFC 5674)
+  * [ ] ssign (RFC 5848)
+  * [ ] ssign-cert (RFC 5848)
+  * [ ] PCNNode (RFC 6661)
+  * [ ] PCNTerm (RFC 6661)
 
 ## License
 
