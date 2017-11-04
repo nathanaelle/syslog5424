@@ -58,8 +58,8 @@ func burst(sock, n string, t Transport) (err error) {
 	}
 
 	wg.Add(2)
-	go serverBurst(wg, mutex, sock, n, t)
-	go clientBurst(wg, mutex, sock, n, t)
+	go serverBurst(wg, mutex, sock, n, t, BURST_COUNT)
+	go clientBurst(wg, mutex, sock, n, t, BURST_COUNT+100)
 
 	wg.Wait()
 	mutex.Unlock()
@@ -67,7 +67,7 @@ func burst(sock, n string, t Transport) (err error) {
 	return
 }
 
-func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transport) {
+func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transport, count int) {
 	defer wg.Done()
 
 	// waiting the creation of the socket
@@ -88,14 +88,14 @@ func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 
 	logger_err_conf := syslog.Channel(LOG_ERR).Logger("ERR : ")
 
-	for i := 0; i < BURST_COUNT+100; i++ {
+	for i := 0; i < count; i++ {
 		logger_err_conf.Print(BURST_MESSAGE)
 	}
 
 	sl_conn.End()
 }
 
-func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transport) {
+func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transport, count int) {
 	defer wg.Done()
 
 	collect, err := (Collector{
@@ -108,7 +108,7 @@ func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 	// socket is created
 	mutex.Unlock()
 
-	for i := 0; i < BURST_COUNT; i++ {
+	for i := 0; i < count; i++ {
 		msg, err, _ := collect.Receive()
 		if err != nil {
 			log.Fatal(err)
@@ -119,4 +119,34 @@ func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 	}
 
 	collect.End()
+}
+
+
+func Benchmark_Burst(b *testing.B) {
+	sock	:= BURST_SOCKET+"-bench"
+	defer os.Remove(sock)
+	os.Remove(sock)
+
+	wg := new(sync.WaitGroup)
+	mutex := new(sync.Mutex)
+
+	trans	:= new(T_RFC5425)
+
+	Now = func() time.Time {
+		t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "2014-12-20T14:04:00Z", time.UTC)
+		return t
+	}
+
+	mutex.Lock()
+	wg.Add(2)
+	go clientBurst(wg, mutex, sock, "unix", trans, b.N+100)
+
+	b.ResetTimer()
+	serverBurst(wg, mutex, sock, "unix", trans, b.N)
+
+	wg.Wait()
+	mutex.Unlock()
+
+	return
+
 }

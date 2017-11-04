@@ -70,6 +70,14 @@ func Benchmark_Message_String_long(b *testing.B) {
 	}
 }
 
+func Benchmark_Message_Marshal5424(b *testing.B) {
+	msg := Message{Priority(0), z_epoch(), "-", "-", "-", "-", sdata.List{tq.TimeQuality{true, true, nil}}, "It's time to make the do-nuts."}
+
+	for i := 0; i < b.N; i++ {
+		msg.Marshal5424()
+	}
+}
+
 func Benchmark_Message_CreateMessage(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		CreateMessage("test", Priority(0), "test")
