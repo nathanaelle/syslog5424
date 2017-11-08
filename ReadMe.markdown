@@ -117,21 +117,21 @@ So This is a very pertinent way to mix *metrics*, *keywords* and human readable 
 
 ### What there is no support of UDP (RFC 5426) ?
 
-System logging must be reliable for security audit of the log.
-UDP is an unreliable protocol because UDP packet can be dropped, and neither the client nor the server will be informed of the missing data.
+System logging must be reliable for security audits of the logs.
+UDP is an unreliable protocol because UDP packets can be dropped, and neither the client nor the server will be informed of the missing data.
 
 ### Why remove parts of code about TLS ?
 
-TLS is supported because the networing is implemented as interfaces.
+TLS is supported because the networking is implemented as interfaces.
 but my idea of "security" is not compatible with maintaining duplicate code.
 
-The requirement to support TLS are :
+The requirements to support TLS are :
 
-1. verify the certificate validity
+1. Verify the certificate validity
 2. verify the chain of trust to the root
-3. verify OSCP staple if provided
-4. check the OSCP's response from the CA
-5. verify the CT with the OSCP's CT information and/or CT extra TLS header
+3. Verify OSCP staple if provided
+4. Check the OSCP's response from the CA
+5. Verify the SCT with the OSCP's SCT information and/or SCT extra TLS header
 
 so, you can :
 
