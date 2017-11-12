@@ -41,13 +41,19 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn, err := (Dialer{
+	sl_conn, chan_err, err := (Dialer{
 		QueueLen:   100,
 		FlushDelay: 100 * time.Millisecond,
-	}).Dial("unix", TEST_SOCKET2, new(T_RFC5425))
+	}).Dial("unix", TEST_SOCKET2, T_RFC5425)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "custom-app")
 	if err != nil {
@@ -69,7 +75,7 @@ func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	collect, err := (Collector{
 		QueueLen: 100,
-	}).Collect("unix", TEST_SOCKET2, new(T_RFC5425))
+	}).Collect("unix", TEST_SOCKET2, T_RFC5425)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"log"
 	"net"
 )
 
@@ -23,8 +24,13 @@ type (
 	Receiver struct {
 		listener  Listener
 		transport Transport
-		pipeline  chan []byte
+		pipeline  chan messageErrorPair
 		end       chan struct{}
+	}
+
+	messageErrorPair struct {
+		m MessageImmutable
+		e error
 	}
 )
 
@@ -35,26 +41,26 @@ func Collect(network, address string) (*Receiver, error) {
 }
 
 func (d Collector) Collect(network, address string, t Transport) (*Receiver, error) {
-	var pipeline chan []byte
+	var pipeline chan messageErrorPair
 	var c Listener
 	var err error
 
 	switch network {
 	case "unix":
 		if t == nil {
-			t = new(T_ZEROENDED)
+			t = T_ZEROENDED
 		}
 		c, err = unix_coll(network, address)
 
 	case "unixgram":
 		if t == nil {
-			t = new(T_ZEROENDED)
+			t = T_ZEROENDED
 		}
 		c, err = unixgram_coll(network, address)
 
 	case "tcp", "tcp6", "tcp4":
 		if t == nil {
-			t = new(T_LFENDED)
+			t = T_LFENDED
 		}
 		c, err = tcp_coll(network, address)
 
@@ -72,16 +78,16 @@ func (d Collector) Collect(network, address string, t Transport) (*Receiver, err
 
 	switch d.QueueLen <= 0 {
 	case true:
-		pipeline = make(chan []byte)
+		pipeline = make(chan messageErrorPair)
 
 	case false:
-		pipeline = make(chan []byte, d.QueueLen)
+		pipeline = make(chan messageErrorPair, d.QueueLen)
 	}
 
 	return NewReceiver(c, pipeline, t), nil
 }
 
-func NewReceiver(listener Listener, pipeline chan []byte, t Transport) *Receiver {
+func NewReceiver(listener Listener, pipeline chan messageErrorPair, t Transport) *Receiver {
 	r := &Receiver{
 		listener:  listener,
 		pipeline:  pipeline,
@@ -116,26 +122,54 @@ func (r *Receiver) run_queue() {
 }
 
 func (r *Receiver) tokenize(conn io.ReadCloser) {
-	scan := bufio.NewScanner(conn)
-	scan.Split(r.transport.Split)
+	defer conn.Close()
 
-	for scan.Scan() {
-		r.pipeline <- []byte(scan.Text())
+	var buffer []byte
+	var data []byte
+	var eof bool
+
+	for {
+		if buffer == nil {
+			buffer = make([]byte, 1<<20)
+		}
+
+		size, err := conn.Read(buffer)
+		if err == io.EOF {
+			eof = true
+			err = nil
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		data, buffer = buffer[0:size], buffer[size:]
+		loop := true
+		for loop {
+			msg, rest, m_err := Parse(data, r.transport, eof)
+
+			log.Printf("L {%q} {%q} %v", msg, rest, m_err)
+
+			if len(rest) == 0 {
+				loop = false
+			}
+			if err != nil && rest == nil {
+				break
+			}
+			data = rest
+
+			r.pipeline <- messageErrorPair{msg, m_err}
+		}
+
+		if eof == true {
+			return
+		}
 	}
-
-	conn.Close()
-}
-
-func (r *Receiver) ReceiveRaw() ([]byte, bool) {
-	b, end := <-r.pipeline
-	return b, end
 }
 
 func (r *Receiver) Receive() (MessageImmutable, error, bool) {
-	b, end := r.ReceiveRaw()
-	msg, err := Parse(b)
+	pair, end := <-r.pipeline
 
-	return msg, err, end
+	return pair.m, pair.e, end
 }
 
 // terminate the log_collector goroutine

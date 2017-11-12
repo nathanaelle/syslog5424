@@ -1,39 +1,52 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
+import (
+	"net"
+)
+
 type (
 	local_conn struct {
-		fd_conn
+		network, address string
+	}
+
+	unixgram struct {
+		addr *Addr
+		c    *net.UnixConn
 	}
 )
 
 // dialer that forward to a local RFC5424 syslog receiver
-func local_dial(network, address string) Conn {
-	s := new(local_conn)
-
-	s.address = address
-	s.network = network
-	s.writer = new_buffer(1<<10, buffer_write, nil)
-
-	return s
+func LocalConnector(network, address string) Connector {
+	return &local_conn{network, address}
 }
 
-func (c *local_conn) Close() error {
-	if c.writer != nil {
-		c.writer.Flush()
-		return c.writer.Close()
+func (c *local_conn) Connect() (WriteCloser, error) {
+	if c.address != "" && c.network != "" {
+		return c.localWriteCloser(net.DialUnix(c.network, nil, &net.UnixAddr{Name: c.address, Net: c.network}))
 	}
-	if c.reader != nil {
-		return c.reader.Close()
-	}
-	return nil
+
+	return c.localWriteCloser(c.osGuessConnnector())
 }
 
-func (c *local_conn) Redial() error {
-	conn, err := c.os_redial()
+func (c *local_conn) localWriteCloser(conn *net.UnixConn, err error) (WriteCloser, error) {
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	c.writer.SetConn(conn)
-	return nil
+	if c.network == "unixgram" {
+		conn.SetWriteBuffer(1 << 16)
+		//		return conn, nil
+		return unixgram{&Addr{c.network, c.address}, conn}, nil
+	}
+	conn.SetWriteBuffer(1 << 20)
+
+	return conn, nil
+}
+
+func (c unixgram) Close() error {
+	return c.c.Close()
+}
+
+func (c unixgram) Write(d []byte) (n int, err error) {
+	return c.c.Write(d)
 }

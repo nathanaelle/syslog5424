@@ -41,10 +41,16 @@ func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn, err := Dial("tcp", TEST_TCP_SOCKET)
+	sl_conn, chan_err, err := Dial("tcp", TEST_TCP_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "client-app")
 	if err != nil {

@@ -3,8 +3,8 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 import (
 	"./sdata"
 	"bytes"
-	"errors"
 	"time"
+	//	"log"
 )
 
 type (
@@ -17,13 +17,6 @@ type (
 	}
 )
 
-var (
-	ERR_Invalid     error = errors.New("Invalid")
-	ERR_Pos0        error = errors.New("Pos 0 Found")
-	ERR_PosNotFound error = errors.New("Pos Not Found")
-	ERRImpossible   error = errors.New("NO ONE EXPECT THE RETURN OF SPANISH INQUISITION")
-)
-
 func search_next_sep(data, sep []byte) (pos int, err error) {
 	pos = bytes.Index(data, sep)
 	if pos > 0 {
@@ -31,95 +24,11 @@ func search_next_sep(data, sep []byte) (pos int, err error) {
 	}
 
 	// pos at -1 or 0 means bad data
-	err = ERR_PosNotFound
+	err = ErrorPosNotFound
 	if pos == 0 {
-		err = ERR_Pos0
+		err = ErrorPos0
 	}
 	return
-}
-
-func Parse(data []byte) (msg MessageImmutable, err error) {
-	sep_sp := []byte{' '}
-	sep_brk := []byte{']'}
-	err_msg := MessageImmutable{nil, nil, -1}
-
-	msg = MessageImmutable{
-		buffer: data,
-		index:  make([]int, 0, 8),
-		text:   -1,
-	}
-
-	parts := 0
-	begin := 0
-	for len(data) > 0 && parts < 6 {
-		end, err := search_next_sep(data[begin:], sep_sp)
-		if err != nil {
-			//log.Printf("%s index %#d parts %d rest %s ", string(msg.buffer), msg.index, parts, data[begin:])
-			return err_msg, err
-		}
-		msg.index = append(msg.index, begin+end)
-		begin = begin + end + 1
-		parts++
-	}
-
-	if len(data[begin:]) == 0 {
-		return err_msg, ERR_Invalid
-	}
-
-	if len(data[begin:]) == 1 {
-		if data[begin] != '-' {
-			return err_msg, ERR_Invalid
-		}
-		msg.index = append(msg.index, begin+2)
-		return
-	}
-
-	end, err := search_next_sep(data[begin:], sep_sp)
-	if err != nil {
-		return err_msg, err
-	}
-
-	if end == 1 {
-		if data[begin] != '-' {
-			return err_msg, ERR_Invalid
-		}
-		msg.index = append(msg.index, begin+1)
-		msg.text = begin + 2
-		return
-	}
-
-	t := begin
-	for len(data[t:]) > 0 {
-		end, err = search_next_sep(data[t:], sep_brk)
-
-		switch err {
-		case nil:
-			if data[t+end-1] == '\\' {
-				t = t + end + 1
-				continue
-			}
-
-			if data[t+end-1] == '"' {
-				msg.index = append(msg.index, t+end+1)
-				begin = t + end + 1
-				t = begin
-				if len(data) <= begin {
-					return
-				}
-				continue
-			}
-			return err_msg, ERR_Invalid
-
-		case ERR_PosNotFound:
-			msg.text = begin + 1
-			err = nil
-			return
-
-		default:
-			return err_msg, err
-		}
-	}
-	return err_msg, ERRImpossible
 }
 
 func (msg MessageImmutable) String() string {
@@ -208,4 +117,168 @@ func (msg MessageImmutable) Message() (text string) {
 
 func (m MessageImmutable) Writable() Message {
 	return Message{m.Priority(), m.TimeStamp(), m.Hostname(), m.AppName(), m.ProcID(), m.MsgID(), m.StructuredData(), m.Message()}
+}
+
+func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutable, rest []byte, main_err error) {
+	sep_sp := []byte{' '}
+	sep_brk := []byte{']'}
+	ret_msg = MessageImmutable{nil, nil, -1}
+
+	if transport != nil {
+		data, rest, main_err = transport.PrefixStrip(data, atEOF)
+		//log.Printf("P {%q} {%q} %v\n", data, rest, main_err)
+		if data == nil && rest == nil && main_err == nil {
+			return
+		}
+	}
+
+	msg := &MessageImmutable{
+		buffer: data,
+		index:  make([]int, 0, 8),
+		text:   -1,
+	}
+
+	parts := 0
+	begin := 0
+	for len(data) > 0 && parts < 6 {
+		end, err := search_next_sep(data[begin:], sep_sp)
+		if err != nil {
+			//log.Printf("%s index %#d parts %d rest %s ", string(msg.buffer), msg.index, parts, data[begin:])
+			if main_err == nil {
+				main_err = err
+			}
+
+			return
+		}
+		msg.index = append(msg.index, begin+end)
+		begin = begin + end + 1
+		parts++
+	}
+
+	if len(data[begin:]) == 0 {
+		if main_err == nil {
+			main_err = ParseError{data, begin, "empty field expected"}
+		}
+
+		return
+	}
+
+	if len(data[begin:]) == 1 {
+		if data[begin] != '-' {
+			if main_err == nil {
+				main_err = ParseError{data, begin, "empty field expected"}
+			}
+
+			return
+		}
+		msg.index = append(msg.index, begin+2)
+
+		if transport != nil && rest == nil {
+			data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
+			//log.Printf("S0 {%q} {%q} %v\n", data, rest, main_err)
+			if data == nil && rest == nil && main_err == nil {
+				return
+			}
+		}
+
+		ret_msg = *msg
+		return
+	}
+
+	end, err := search_next_sep(data[begin:], sep_sp)
+	if err != nil {
+		if main_err == nil {
+			main_err = err
+		}
+
+		return
+	}
+
+	if end == 1 {
+		if data[begin] != '-' {
+			if main_err == nil {
+				main_err = ParseError{data, begin, "empty structured data expected"}
+			}
+
+			return
+		}
+		msg.index = append(msg.index, begin+1)
+		msg.text = begin + 2
+
+		if transport != nil && rest == nil {
+			data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
+			//log.Printf("S1 {%q} {%q} %v\n", data, rest, main_err)
+			if data == nil && rest == nil && main_err == nil {
+				return
+			}
+			end := msg.text + len(data)
+			msg.buffer = msg.buffer[:end]
+		}
+
+		ret_msg = *msg
+		return
+	}
+
+	t := begin
+	for len(data[t:]) > 0 {
+		end, err = search_next_sep(data[t:], sep_brk)
+
+		switch err {
+		case nil:
+			if data[t+end-1] == '\\' {
+				t = t + end + 1
+				continue
+			}
+
+			if data[t+end-1] == '"' {
+				msg.index = append(msg.index, t+end+1)
+				begin = t + end + 1
+				t = begin
+				if len(data) <= begin {
+					if transport != nil && rest == nil {
+						data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
+						//log.Printf("S2 {%q} {%q} %v\n", data, rest, main_err)
+						if data == nil && rest == nil && main_err == nil {
+							return
+						}
+					}
+
+					ret_msg = *msg
+					return
+				}
+				continue
+			}
+			if main_err == nil {
+				main_err = ParseError{data, t + end - 1, `\\ or " expected`}
+			}
+
+			return
+
+		case ErrorPosNotFound:
+			msg.text = begin + 1
+
+			if transport != nil && rest == nil {
+				data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
+				//log.Printf("S3 {%q} {%q} %v\n", data, rest, main_err)
+				if data == nil && rest == nil && main_err == nil {
+					return
+				}
+			}
+
+			ret_msg = *msg
+			return
+
+		default:
+			if main_err == nil {
+				main_err = err
+			}
+
+			return
+		}
+	}
+	if main_err == nil {
+		main_err = ErrorImpossible
+	}
+
+	return
 }

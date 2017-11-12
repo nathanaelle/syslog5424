@@ -136,7 +136,7 @@ The requirements to support TLS are :
 so, you can :
 
 1. Write your own code with the golang TLS stack (everything is provided through interfaces)
-2. Wait for my implementation ( in [https://github.com/nathanaelle/pasnet](https://github.com/nathanaelle/pasnet) ) with the golang TLS stack wich will provide OCSP and Public Key verification
+2. Wait for my implementation with the golang TLS stack wich will provide OCSP and Public Key verification
 
 ## Todo
 
