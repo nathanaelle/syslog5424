@@ -42,7 +42,6 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	// waiting the creation of the socket
 	mutex.Lock()
 	sl_conn, chan_err, err := (Dialer{
-		QueueLen:   100,
 		FlushDelay: 100 * time.Millisecond,
 	}).Dial("unix", TEST_SOCKET2, T_RFC5425)
 	if err != nil {

@@ -9,7 +9,7 @@ type (
 	unix_receiver struct {
 		network   string
 		address   string
-		listener  net.Listener
+		listener  *net.UnixListener
 		transport Transport
 		pipeline  chan []byte
 	}
@@ -46,7 +46,14 @@ func unix_coll(_, address string) (Listener, error) {
 }
 
 func (r *unix_receiver) Accept() (net.Conn, error) {
-	return r.listener.Accept()
+	conn, err := r.listener.AcceptUnix()
+	if err != nil {
+		return nil, err
+	}
+	conn.SetWriteBuffer(0)
+	conn.SetReadBuffer(readBuffer)
+
+	return conn, nil
 }
 
 func (r *unix_receiver) Close() error {

@@ -11,7 +11,7 @@ import (
 const BURST_SOCKET string = "./test-burst.socket"
 const BURST_MESSAGE string = "doing some stuff"
 const BURST_PACKET string = "<27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing some stuff"
-const BURST_COUNT int = 100
+const BURST_COUNT int = 100000
 
 type burst_tok struct {
 	sock      string
@@ -22,12 +22,12 @@ type burst_tok struct {
 //*
 func Test_Burst(t *testing.T) {
 	seq := []burst_tok{
+		{"u5425", "unix", T_RFC5425},
 		{"ulf", "unix", T_LFENDED},
 		{"uzero", "unix", T_ZEROENDED},
-		{"u5425", "unix", T_RFC5425},
-		{"dlf", "unixgram", T_LFENDED},
+/*		{"dlf", "unixgram", T_LFENDED},
 		{"dzero", "unixgram", T_ZEROENDED},
-		{"d5425", "unixgram", T_RFC5425},
+		{"d5425", "unixgram", T_RFC5425}, */
 	}
 
 	for _, s := range seq {
@@ -45,17 +45,16 @@ func burst(sock, n string, t Transport) (err error) {
 	defer os.Remove(sock)
 	os.Remove(sock)
 
-	wg := new(sync.WaitGroup)
-	mutex := new(sync.Mutex)
-
 	err = nil
-	mutex.Lock()
-
 	Now = func() time.Time {
 		t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "2014-12-20T14:04:00Z", time.UTC)
 		return t
 	}
 
+	wg := new(sync.WaitGroup)
+	mutex := new(sync.Mutex)
+
+	mutex.Lock()
 	wg.Add(2)
 	go serverBurst(wg, mutex, sock, n, t, BURST_COUNT)
 	go clientBurst(wg, mutex, sock, n, t, BURST_COUNT+100)
@@ -72,8 +71,7 @@ func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 	// waiting the creation of the socket
 	mutex.Lock()
 	sl_conn, chan_err, err := (Dialer{
-		QueueLen:   100,
-		FlushDelay: 50 * time.Millisecond,
+		FlushDelay: 100 * time.Millisecond,
 	}).Dial(n, sock, t)
 	if err != nil {
 		log.Fatalf("client Dial %q", err)
@@ -123,7 +121,6 @@ func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 			log.Fatalf("server got %q expected %q", msg, BURST_PACKET)
 		}
 	}
-
 }
 
 func Benchmark_Burst(b *testing.B) {

@@ -94,8 +94,8 @@ func Test_MessageImmutable_Values(t *testing.T) {
 		return
 	}
 
-	if a.Message() != "" {
-		t.Errorf("Writable: expected {{ %q }} got {{ %q }}", "", a.Message())
+	if a.Text() != "" {
+		t.Errorf("Writable: expected {{ %q }} got {{ %q }}", "", a.Text())
 		return
 	}
 
@@ -158,8 +158,8 @@ func Test_MessageImmutable_Values(t *testing.T) {
 		return
 	}
 
-	if a.Message() != "%% It's time to make the do-nuts." {
-		t.Errorf("Writable: expected {{ %q }} got {{ %q }}", "%% It's time to make the do-nuts.", a.Message())
+	if a.Text() != "%% It's time to make the do-nuts." {
+		t.Errorf("Writable: expected {{ %q }} got {{ %q }}", "%% It's time to make the do-nuts.", a.Text())
 		return
 	}
 }

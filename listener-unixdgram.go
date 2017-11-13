@@ -103,9 +103,6 @@ func (r *fake_conn) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 
-func (c *fake_conn) Redial() error {
-	return nil
-}
 
 func (c *fake_conn) Flush() error {
 	return nil

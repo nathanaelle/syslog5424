@@ -7,9 +7,6 @@ import (
 
 type (
 	Dialer struct {
-		// length of the queue to the log_sender goroutine
-		QueueLen int
-
 		// delay to flush the queue
 		FlushDelay time.Duration
 	}
@@ -22,7 +19,6 @@ type (
 // FlushDelay is preset to 500ms
 func Dial(network, address string) (*Sender, <-chan error, error) {
 	return (Dialer{
-		QueueLen:   100,
 		FlushDelay: 500 * time.Millisecond,
 	}).Dial(network, address, nil)
 }
@@ -32,17 +28,8 @@ func Dial(network, address string) (*Sender, <-chan error, error) {
 // Transport can be nil.
 // if Transport is nil the "common" transport for the wished network is used.
 func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan error, error) {
-	var pipeline chan []byte
 	var ticker <-chan time.Time
 	var c Connector
-
-	switch {
-	case d.QueueLen <= 0:
-		pipeline = make(chan []byte)
-
-	default:
-		pipeline = make(chan []byte, d.QueueLen)
-	}
 
 	switch {
 	case d.FlushDelay <= time.Millisecond:
@@ -86,6 +73,6 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan erro
 		return nil, nil, ErrorNoConnecion
 	}
 
-	sndr, chan_err := NewSender(c, t, pipeline, ticker)
+	sndr, chan_err := NewSender(c, t, ticker)
 	return sndr, chan_err, nil
 }

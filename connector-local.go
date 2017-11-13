@@ -34,11 +34,9 @@ func (c *local_conn) localWriteCloser(conn *net.UnixConn, err error) (WriteClose
 	}
 
 	if c.network == "unixgram" {
-		conn.SetWriteBuffer(1 << 16)
 		//		return conn, nil
 		return unixgram{&Addr{c.network, c.address}, conn}, nil
 	}
-	conn.SetWriteBuffer(1 << 20)
 
 	return conn, nil
 }

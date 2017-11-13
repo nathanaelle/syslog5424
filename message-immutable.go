@@ -4,6 +4,7 @@ import (
 	"./sdata"
 	"bytes"
 	"time"
+	"io"
 	//	"log"
 )
 
@@ -106,7 +107,7 @@ func (msg MessageImmutable) StructuredData() (lsd sdata.List) {
 	return
 }
 
-func (msg MessageImmutable) Message() (text string) {
+func (msg MessageImmutable) Text() (text string) {
 	if msg.text < 1 {
 		text = ""
 		return
@@ -116,13 +117,18 @@ func (msg MessageImmutable) Message() (text string) {
 }
 
 func (m MessageImmutable) Writable() Message {
-	return Message{m.Priority(), m.TimeStamp(), m.Hostname(), m.AppName(), m.ProcID(), m.MsgID(), m.StructuredData(), m.Message()}
+	return Message{m.Priority(), m.TimeStamp(), m.Hostname(), m.AppName(), m.ProcID(), m.MsgID(), m.StructuredData(), m.Text()}
+}
+
+func (msg MessageImmutable)WriteTo(w io.Writer) (n int64, err error) {
+	in, err := w.Write(msg.buffer)
+	n = int64(in)
+	return
 }
 
 func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutable, rest []byte, main_err error) {
 	sep_sp := []byte{' '}
 	sep_brk := []byte{']'}
-	ret_msg = MessageImmutable{nil, nil, -1}
 
 	if transport != nil {
 		data, rest, main_err = transport.PrefixStrip(data, atEOF)
@@ -132,7 +138,7 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 		}
 	}
 
-	msg := &MessageImmutable{
+	msg := MessageImmutable{
 		buffer: data,
 		index:  make([]int, 0, 8),
 		text:   -1,
@@ -144,10 +150,7 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 		end, err := search_next_sep(data[begin:], sep_sp)
 		if err != nil {
 			//log.Printf("%s index %#d parts %d rest %s ", string(msg.buffer), msg.index, parts, data[begin:])
-			if main_err == nil {
-				main_err = err
-			}
-
+			main_err = dispatch_error(main_err, err)
 			return
 		}
 		msg.index = append(msg.index, begin+end)
@@ -156,66 +159,36 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 	}
 
 	if len(data[begin:]) == 0 {
-		if main_err == nil {
-			main_err = ParseError{data, begin, "empty field expected"}
-		}
-
+		main_err = dispatch_error(main_err, ParseError{data, begin, "empty field expected"})
 		return
 	}
 
 	if len(data[begin:]) == 1 {
 		if data[begin] != '-' {
-			if main_err == nil {
-				main_err = ParseError{data, begin, "empty field expected"}
-			}
-
+			main_err = dispatch_error(main_err, ParseError{data, begin, "empty field expected"})
 			return
 		}
 		msg.index = append(msg.index, begin+2)
 
-		if transport != nil && rest == nil {
-			data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
-			//log.Printf("S0 {%q} {%q} %v\n", data, rest, main_err)
-			if data == nil && rest == nil && main_err == nil {
-				return
-			}
-		}
-
-		ret_msg = *msg
+		ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
 		return
 	}
 
 	end, err := search_next_sep(data[begin:], sep_sp)
 	if err != nil {
-		if main_err == nil {
-			main_err = err
-		}
-
+		main_err = dispatch_error(main_err, err)
 		return
 	}
 
 	if end == 1 {
 		if data[begin] != '-' {
-			if main_err == nil {
-				main_err = ParseError{data, begin, "empty structured data expected"}
-			}
-
+			main_err = dispatch_error(main_err, ParseError{data, begin, "empty structured data expected"})
 			return
 		}
+
 		msg.index = append(msg.index, begin+1)
 		msg.text = begin + 2
-
-		if transport != nil && rest == nil {
-			data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
-			//log.Printf("S1 {%q} {%q} %v\n", data, rest, main_err)
-			if data == nil && rest == nil && main_err == nil {
-				return
-			}
-			end := msg.text + len(data)
-			msg.buffer = msg.buffer[:end]
-		}
-
-		ret_msg = *msg
+		ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
 		return
 	}
 
@@ -235,50 +208,67 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 				begin = t + end + 1
 				t = begin
 				if len(data) <= begin {
-					if transport != nil && rest == nil {
-						data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
-						//log.Printf("S2 {%q} {%q} %v\n", data, rest, main_err)
-						if data == nil && rest == nil && main_err == nil {
-							return
-						}
-					}
-
-					ret_msg = *msg
+					ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
 					return
 				}
 				continue
 			}
-			if main_err == nil {
-				main_err = ParseError{data, t + end - 1, `\\ or " expected`}
-			}
 
+			main_err = dispatch_error(main_err, ParseError{data, t + end - 1, `\\ or " expected`})
 			return
 
 		case ErrorPosNotFound:
 			msg.text = begin + 1
 
-			if transport != nil && rest == nil {
-				data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
-				//log.Printf("S3 {%q} {%q} %v\n", data, rest, main_err)
-				if data == nil && rest == nil && main_err == nil {
-					return
-				}
-			}
-
-			ret_msg = *msg
+			ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
 			return
 
 		default:
-			if main_err == nil {
-				main_err = err
-			}
-
+			main_err = dispatch_error(main_err, err)
 			return
 		}
 	}
-	if main_err == nil {
-		main_err = ErrorImpossible
+	main_err = dispatch_error(main_err, ErrorImpossible)
+	return
+}
+
+func dispatch_error(main_err, err error) (ret_err error) {
+	switch main_err {
+	case	nil:
+		ret_err = err
+	default:
+		ret_err = main_err
+	}
+	return
+}
+
+
+func parse_return(msg MessageImmutable, transport Transport, atEOF bool, o_data, o_rest []byte)(ret_msg MessageImmutable, data, rest []byte, main_err error) {
+	data = o_data
+	rest = o_rest
+
+	if transport == nil {
+		ret_msg = msg
+		return
 	}
 
+	if rest != nil {
+		ret_msg = msg
+		return
+	}
+
+	data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
+	//log.Printf("RET\t{%q} {%q} %v\n", data, rest, main_err)
+	if data == nil && rest == nil && main_err == nil {
+		return
+	}
+
+	end := msg.text + len(data)
+	if len(msg.buffer) > end {
+		msg.buffer = msg.buffer[:end]
+
+	}
+
+	ret_msg = msg
 	return
 }

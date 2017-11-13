@@ -4,6 +4,7 @@ import (
 	"io"
 	"net"
 	"time"
+	"sync"
 )
 
 type (
@@ -22,12 +23,14 @@ type (
 	// Sender describe the generic algorithm for sending Message through a connection
 	Sender struct {
 		connector     Connector
-		output        WriteCloser
-		pipeline      chan []byte
+		output        io.WriteCloser
+		end_asked	chan struct{}
 		end_completed chan struct{}
 		ticker        <-chan time.Time
 		transport     Transport
 		err_chan      chan error
+		lock		*sync.Mutex
+		queue		*net.Buffers
 	}
 
 	Addr struct {
@@ -41,26 +44,63 @@ func (f ConnectorFunc) Connect() (WriteCloser, error) {
 }
 
 // Create a new sender
-func NewSender(output Connector, transport Transport, pipeline chan []byte, ticker <-chan time.Time) (*Sender, <-chan error) {
+func NewSender(output Connector, transport Transport, ticker <-chan time.Time) (*Sender, <-chan error) {
 	s := &Sender{
-		pipeline:      pipeline,
+		end_asked:      make(chan struct{}),
 		end_completed: make(chan struct{}),
 		connector:     output,
 		ticker:        ticker,
 		transport:     transport,
 		err_chan:      make(chan error, 1),
+		lock:		new(sync.Mutex),
+		queue:		new(net.Buffers),
+
 	}
+	*s.queue = make([][]byte, 0, 1000)
+
 
 	go s.run_queue()
 
 	return s, s.err_chan
 }
 
-func (c *Sender) run_queue() {
-	queue := new(net.Buffers)
-	*queue = make([][]byte, 0, 1000)
 
+func (c *Sender) flush_queue() {
+	if c.output == nil {
+		var err error
+		if c.output, err = c.connector.Connect(); err != nil {
+			c.err_chan <- err
+			return
+		}
+	}
+
+	//log.Printf("<--\tget lock for %d items", len(*c.queue))
+	c.lock.Lock()
+
+	for len(*c.queue) > 0 {
+		_, err := c.queue.WriteTo(c.output)
+		//log.Printf("wrote %d", size)
+		if err != nil {
+			c.err_chan <- err
+			c.output = nil
+			break
+		}
+	}
+
+	if len(*c.queue) == 0 && cap(*c.queue) == 0 {
+		*c.queue = make([][]byte, 0, 100)
+	}
+	c.lock.Unlock()
+	//log.Printf("<--\tget unlock")
+}
+
+
+
+func (c *Sender) run_queue() {
 	defer func() {
+		for len(*c.queue) > 0 {
+			c.flush_queue()
+		}
 		c.output.Close()
 		close(c.end_completed)
 		close(c.err_chan)
@@ -69,50 +109,35 @@ func (c *Sender) run_queue() {
 	for {
 		select {
 		case <-c.ticker:
-			if c.output == nil {
-				var err error
-				if c.output, err = c.connector.Connect(); err != nil {
-					c.err_chan <- err
-					continue
-				}
-			}
+			c.flush_queue()
 
-			for len(*queue) > 0 {
-				if _, err := queue.WriteTo(c.output); err != nil {
-					c.err_chan <- err
-					c.output = nil
-					break
-				}
+		case _, opened := <-c.end_asked:
+			if !opened {
+				return
 			}
-			if len(*queue) == 0 && cap(*queue) == 0 {
-				*queue = make([][]byte, 0, 1000)
-			}
-
-		case msg, opened := <-c.pipeline:
-			if !opened && msg == nil {
-				switch len(*queue) {
-				case 0:
-					return
-				default:
-					continue
-				}
-			}
-
-			*queue = append(*queue, msg)
 		}
 	}
 }
 
 // send a Message to the log_sender goroutine
 func (c *Sender) Send(m Message) (err error) {
-	msg, err := m.Marshal5424()
-	c.pipeline <- c.transport.Encode(msg)
+	var msg	[]byte
+
+	msg, err = m.Marshal5424()
+	if err != nil {
+		return err
+	}
+
+	c.lock.Lock()
+	*c.queue = append(*c.queue, c.transport.Encode(msg))
+	c.lock.Unlock()
+
 	return
 }
 
 // terminate the log_sender goroutine
 func (c *Sender) End() {
-	close(c.pipeline)
+	close(c.end_asked)
 	<-c.end_completed
 }
 

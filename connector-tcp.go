@@ -87,7 +87,6 @@ func (c *tcp_conn) Connect() (conn WriteCloser, err error) {
 	contcp.SetKeepAlive(true)
 	contcp.SetKeepAlivePeriod(2 * time.Minute)
 	contcp.SetLinger(-1)
-	contcp.SetWriteBuffer(1 << 10)
 
 	conn = contcp
 	return
