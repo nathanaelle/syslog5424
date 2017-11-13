@@ -11,7 +11,7 @@ func ExampleSyslogClient() {
 		return t
 	}
 
-	sl_conn, _, _ := Dial("stdio", "stdout")
+	sl_conn, _, _ := Dial("stdio", "stdout:")
 
 	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "test-app")
 	if err != nil {

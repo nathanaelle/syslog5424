@@ -72,12 +72,18 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err := (Collector{
-		QueueLen: 100,
-	}).Collect("unix", TEST_SOCKET2, T_RFC5425)
+	listener, err := UnixListener(TEST_SOCKET2)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("server Collect %q", err)
 	}
+
+	collect, chan_err := NewReceiver(listener, 100, T_RFC5425)
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatalf("client chan_err %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()

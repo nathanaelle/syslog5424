@@ -11,12 +11,12 @@ func StdioConnector(addr string) Connector {
 	}
 
 	switch addr {
-	case "stderr":
+	case "stderr:":
 		return ConnectorFunc(func() (WriteCloser, error) {
 			return os.Stderr, nil
 		})
 
-	case "stdout":
+	case "stdout:":
 		return ConnectorFunc(func() (WriteCloser, error) {
 			return os.Stdout, nil
 		})

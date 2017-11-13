@@ -18,7 +18,7 @@ type (
 	// len([]byte) ' ' []byte
 	t_RFC5425 struct{}
 
-	T_GUESS struct{}
+	t_GUESS struct{}
 
 	Transport interface {
 		// Set the sub conn where to write the transport-encoded data
@@ -34,8 +34,13 @@ type (
 )
 
 var (
+	// commonly used transport with "unix" and "unixgram"
 	T_ZEROENDED Transport = t_ZEROENDED{}
+
+	// commonly used transport with "tcp" "tcp4" and "tcp6"
 	T_LFENDED   Transport = t_LFENDED{}
+
+	// performant transport specified in RFC 5425
 	T_RFC5425   Transport = t_RFC5425{}
 )
 
@@ -153,80 +158,6 @@ func (t t_ZEROENDED) Encode(d []byte) []byte {
 func (t t_LFENDED) Encode(d []byte) []byte {
 	return append(d, '\n')
 }
-
-/*
-// split function for NULL terminated message
-func (t t_ZEROENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	if i := bytes.IndexByte(data, byte(0)); i >= 0 {
-		return i + 1, data[0:i], nil
-	}
-
-	// TODO need to detect the non zero ended message here
-
-	if atEOF {
-		return len(data), data, nil
-	}
-
-	// more data.
-	return 0, nil, nil
-}
-
-// split function for LF terminated message
-func (t t_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		return i + 1, data[0:i], nil
-	}
-
-	if atEOF {
-		//return len(data), data, nil
-		return 0, nil, errors.New("T_LFENDED Split: incomplete message")
-	}
-
-	// more data.
-	return 0, nil, nil
-}
-
-// split function for RFC 5425 message
-func (t t_RFC5425) Split(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	if len(data) < 20 {
-		return 0, nil, nil
-	}
-
-	sep_pos := bytes.IndexByte(data, ' ')
-	if sep_pos <= 0 {
-		return 0, nil, errors.New("T_RFC5425 Split: no header len")
-	}
-
-	msg_len, err := strconv.Atoi(string(data[0:sep_pos]))
-	if err != nil {
-		return 0, nil, errors.New("T_RFC5425 Split: invalid header len")
-	}
-
-	start := sep_pos + 1
-	buf_len := start + msg_len
-	if len(data) < buf_len {
-		if atEOF {
-			return 0, nil, errors.New("T_RFC5425 Split: incomplete message")
-		}
-		return 0, nil, nil
-	}
-
-	return buf_len, data[start:buf_len], nil
-}
-
-*/
 
 // Write a RFC 5425 formated message
 // see (Conn interface)[#Conn]

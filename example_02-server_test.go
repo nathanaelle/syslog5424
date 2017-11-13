@@ -70,10 +70,17 @@ func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 func server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err := Collect("unix", TEST_SOCKET)
+	listener, err := UnixListener(TEST_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
+	collect, chan_err := NewReceiver(listener, 100, T_ZEROENDED)
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatalf("client chan_err %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()

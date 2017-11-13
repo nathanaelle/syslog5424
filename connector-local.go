@@ -33,6 +33,9 @@ func (c *local_conn) localWriteCloser(conn *net.UnixConn, err error) (WriteClose
 		return nil, err
 	}
 
+	conn.SetReadBuffer(0)
+	conn.CloseRead()
+
 	if c.network == "unixgram" {
 		//		return conn, nil
 		return unixgram{&Addr{c.network, c.address}, conn}, nil

@@ -9,27 +9,23 @@ import (
 
 type (
 	unixgram_receiver struct {
-		network  string
-		address  string
 		listener *net.UnixConn
 		accepted bool
 		end      chan struct{}
 	}
 
 	fake_conn struct {
-		addr  *Addr
+		addr  net.Addr
 		buff  []byte
 		queue chan []byte
 		end   chan struct{}
 	}
 )
 
-func unixgram_coll(_, address string) (Listener, error) {
+func UnixgramListener(address string) (Listener, error) {
 	var err error
 
 	r := new(unixgram_receiver)
-	r.network = "unixgram"
-	r.address = address
 	r.end = make(chan struct{})
 
 	r.listener, err = net.ListenUnixgram("unixgram", &net.UnixAddr{address, "unixgram"})
@@ -51,6 +47,11 @@ func unixgram_coll(_, address string) (Listener, error) {
 
 		r.listener, err = net.ListenUnixgram("unixgram", &net.UnixAddr{address, "unixgram"})
 	}
+
+	r.listener.SetWriteBuffer(0)
+	r.listener.CloseWrite()
+	r.listener.SetReadBuffer(readBuffer)
+
 	return r, nil
 }
 
@@ -59,12 +60,8 @@ func (r *unixgram_receiver) Close() error {
 	return r.listener.Close()
 }
 
-func (r *unixgram_receiver) Addr() net.Addr {
-	return &Addr{r.network, r.address}
-}
-
 // mimic an Accept
-func (r *unixgram_receiver) Accept() (net.Conn, error) {
+func (r *unixgram_receiver) Accept() (DataReader, error) {
 	if r.accepted {
 		<-r.end
 		return nil, errors.New("end")
@@ -73,7 +70,7 @@ func (r *unixgram_receiver) Accept() (net.Conn, error) {
 	r.accepted = true
 
 	fc := &fake_conn{
-		addr:  &Addr{r.network, r.address},
+		addr:  r.listener.RemoteAddr(),
 		queue: make(chan []byte, 1000),
 		end:   r.end,
 	}
@@ -83,37 +80,12 @@ func (r *unixgram_receiver) Accept() (net.Conn, error) {
 	return fc, nil
 }
 
-func (r *fake_conn) LocalAddr() net.Addr {
-	return r.addr
-}
-
 func (r *fake_conn) RemoteAddr() net.Addr {
 	return r.addr
 }
 
-func (r *fake_conn) SetDeadline(_ time.Time) error {
-	return nil
-}
-
-func (r *fake_conn) SetReadDeadline(_ time.Time) error {
-	return nil
-}
-
-func (r *fake_conn) SetWriteDeadline(_ time.Time) error {
-	return nil
-}
-
-
-func (c *fake_conn) Flush() error {
-	return nil
-}
-
 func (r *fake_conn) Close() error {
 	return nil
-}
-
-func (r *fake_conn) Write(data []byte) (int, error) {
-	return len(data), nil
 }
 
 func (r *fake_conn) Read(data []byte) (int, error) {
@@ -144,7 +116,7 @@ func (r *fake_conn) run_queue(conn *net.UnixConn) {
 			return
 
 		default:
-			buffer := make([]byte, 1<<16)
+			buffer := make([]byte, readBuffer)
 
 			conn.SetReadDeadline(time.Now().Add(1000 * time.Millisecond))
 			s, _, err := conn.ReadFrom(buffer)

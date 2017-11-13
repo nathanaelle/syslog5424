@@ -1,7 +1,6 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"errors"
 	"io"
 	"net"
 //	"log"
@@ -10,7 +9,7 @@ import (
 type (
 	Listener interface {
 		// set a deadline for Accept()
-		SetDeadline(t time.Time) error
+		// SetDeadline(t time.Time) error
 
 		// Accept waits for and returns the next DataReader to the listener.
 	         Accept() (DataReader, error)
@@ -25,14 +24,6 @@ type (
 
 		// RemoteAddr returns the remote network address.
 		RemoteAddr() net.Addr
-	}
-
-
-	Collector struct {
-		// length of the queue to the receiver queue
-		QueueLen int
-
-		pipeline chan []byte
 	}
 
 	Receiver struct {
@@ -50,60 +41,18 @@ type (
 
 const	readBuffer = 1<<18
 
-func Collect(network, address string) (*Receiver, error) {
-	return (Collector{
-		QueueLen: 100,
-	}).Collect(network, address, nil)
-}
 
-func (d Collector) Collect(network, address string, t Transport) (*Receiver, error) {
+func NewReceiver(listener Listener, queue_len int, t Transport) (*Receiver, <-chan error) {
 	var pipeline chan messageErrorPair
-	var c Listener
-	var err error
 
-	switch network {
-	case "unix":
-		if t == nil {
-			t = T_ZEROENDED
-		}
-		c, err = unix_coll(network, address)
-
-	case "unixgram":
-		if t == nil {
-			t = T_ZEROENDED
-		}
-		c, err = unixgram_coll(network, address)
-
-	case "tcp", "tcp6", "tcp4":
-		if t == nil {
-			t = T_LFENDED
-		}
-		c, err = tcp_coll(network, address)
-
-	default:
-		return nil, errors.New("unknown network for Collector : " + network)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if c == nil {
-		return nil, ErrorNoConnecion
-	}
-
-	switch d.QueueLen <= 0 {
+	switch queue_len <= 0 {
 	case true:
 		pipeline = make(chan messageErrorPair)
-
 	case false:
-		pipeline = make(chan messageErrorPair, d.QueueLen)
+		pipeline = make(chan messageErrorPair, queue_len)
 	}
 
-	return NewReceiver(c, pipeline, t), nil
-}
 
-func NewReceiver(listener Listener, pipeline chan messageErrorPair, t Transport) *Receiver {
 	r := &Receiver{
 		listener:  listener,
 		pipeline:  pipeline,
@@ -111,12 +60,14 @@ func NewReceiver(listener Listener, pipeline chan messageErrorPair, t Transport)
 		end:       make(chan struct{}),
 	}
 
-	go r.run_queue()
+	chan_err := make(chan error, 10)
 
-	return r
+	go r.run_queue(chan_err)
+
+	return r, chan_err
 }
 
-func (r *Receiver) run_queue() {
+func (r *Receiver) run_queue(chan_err chan<- error) {
 	defer r.listener.Close()
 	defer close(r.pipeline)
 
@@ -128,16 +79,16 @@ func (r *Receiver) run_queue() {
 		default:
 			conn, err := r.listener.Accept()
 			if err != nil {
-				panic(err)
+				chan_err <- err
 			}
 
-			go r.tokenize(conn)
+			go r.tokenize(conn, chan_err)
 		}
 	}
 
 }
 
-func (r *Receiver) tokenize(conn io.ReadCloser) {
+func (r *Receiver) tokenize(conn io.ReadCloser, chan_err chan<- error) {
 	defer conn.Close()
 
 	var eof bool
@@ -156,7 +107,7 @@ func (r *Receiver) tokenize(conn io.ReadCloser) {
 		//log.Printf("EOF\t%v %v %v %v", count, total, read_len, err)
 
 		if err != nil {
-			panic(err)
+			chan_err <- err
 		}
 		if read_len == 0 && eof {
 			return

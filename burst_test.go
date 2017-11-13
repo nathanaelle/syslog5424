@@ -101,13 +101,19 @@ func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transport, count int) {
 	defer wg.Done()
 
-	collect, err := (Collector{
-		QueueLen: 100,
-	}).Collect(n, sock, t)
+	listener, err := GuessListener(n, sock)
 	if err != nil {
 		log.Fatalf("server Collect %q", err)
 	}
+
+	collect, chan_err := NewReceiver(listener, 100, t)
 	defer collect.End()
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatalf("client chan_err %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()

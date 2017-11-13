@@ -7,22 +7,17 @@ import (
 
 type (
 	unix_receiver struct {
-		network   string
-		address   string
 		listener  *net.UnixListener
-		transport Transport
-		pipeline  chan []byte
 	}
 )
 
-func unix_coll(_, address string) (Listener, error) {
+// careful : a previous unused socket may be removed and recreated
+func UnixListener(address string) (Listener, error) {
 	var err error
 
 	r := new(unix_receiver)
-	r.network = "unix"
-	r.address = address
-
 	r.listener, err = net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
+
 	for err != nil {
 		switch err.(type) {
 		case *net.OpError:
@@ -45,12 +40,13 @@ func unix_coll(_, address string) (Listener, error) {
 	return r, nil
 }
 
-func (r *unix_receiver) Accept() (net.Conn, error) {
+func (r *unix_receiver) Accept() (DataReader, error) {
 	conn, err := r.listener.AcceptUnix()
 	if err != nil {
 		return nil, err
 	}
 	conn.SetWriteBuffer(0)
+	conn.CloseWrite()
 	conn.SetReadBuffer(readBuffer)
 
 	return conn, nil
@@ -58,8 +54,4 @@ func (r *unix_receiver) Accept() (net.Conn, error) {
 
 func (r *unix_receiver) Close() error {
 	return r.listener.Close()
-}
-
-func (r *unix_receiver) Addr() net.Addr {
-	return &Addr{r.network, r.address}
 }

@@ -70,10 +70,18 @@ func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err := Collect("tcp", TEST_TCP_SOCKET)
+	listener, err := TCPListener("tcp", TEST_TCP_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	collect, chan_err := NewReceiver(listener, 100, T_LFENDED)
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatalf("client chan_err %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()
