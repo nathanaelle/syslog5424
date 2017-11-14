@@ -2,7 +2,6 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
 	"bytes"
-	"errors"
 	"strconv"
 )
 
@@ -24,9 +23,10 @@ type (
 		// Set the sub conn where to write the transport-encoded data
 		Encode([]byte) []byte
 
-		// see bufio.Scanner
-		//		Split([]byte, bool) (int, []byte, error)
+		// Decode the prefix in case of transport that use an encoding header
 		PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error)
+
+		// Decode the suffix in case of transport that use an encoding terminaison
 		SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error)
 
 		String() string
@@ -38,10 +38,10 @@ var (
 	T_ZEROENDED Transport = t_ZEROENDED{}
 
 	// commonly used transport with "tcp" "tcp4" and "tcp6"
-	T_LFENDED   Transport = t_LFENDED{}
+	T_LFENDED Transport = t_LFENDED{}
 
 	// performant transport specified in RFC 5425
-	T_RFC5425   Transport = t_RFC5425{}
+	T_RFC5425 Transport = t_RFC5425{}
 )
 
 func (t t_ZEROENDED) String() string {
@@ -70,11 +70,6 @@ func (t t_LFENDED) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, er
 	}
 	return buffer, nil, nil
 }
-
-var (
-	ERR_TRANSPORT_NOHEADER  error = errors.New("T_RFC5425 Split: no header len")
-	ERR_TRANSPORT_INVHEADER error = errors.New("T_RFC5425 Split: invalid header len")
-)
 
 func (t t_RFC5425) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {

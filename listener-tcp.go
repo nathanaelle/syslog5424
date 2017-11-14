@@ -6,7 +6,7 @@ import (
 
 type (
 	tcp_receiver struct {
-		listener  *net.TCPListener
+		listener *net.TCPListener
 	}
 )
 
@@ -16,7 +16,6 @@ func TCPListener(network, address string) (Listener, error) {
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
 		return nil, ErrorInvalidNetwork
 	}
-
 
 	laddr, err := net.ResolveTCPAddr(network, address)
 	if err != nil {

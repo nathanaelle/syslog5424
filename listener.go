@@ -3,7 +3,7 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 import (
 	"io"
 	"net"
-//	"log"
+	//	"log"
 )
 
 type (
@@ -12,10 +12,10 @@ type (
 		// SetDeadline(t time.Time) error
 
 		// Accept waits for and returns the next DataReader to the listener.
-	         Accept() (DataReader, error)
+		Accept() (DataReader, error)
 
-	         // Close closes the listener.
-	         Close() error
+		// Close closes the listener.
+		Close() error
 	}
 
 	DataReader interface {
@@ -39,19 +39,24 @@ type (
 	}
 )
 
-const	readBuffer = 1<<18
+const readBuffer = 1 << 18
 
-
+// if Transport is nil then the function returns nil, nil
+// this case may occurs when transport is unknown at compile time
+//
+// the returned `<-chan error` is used to collect errors than may occur in goroutine
 func NewReceiver(listener Listener, queue_len int, t Transport) (*Receiver, <-chan error) {
 	var pipeline chan messageErrorPair
 
-	switch queue_len <= 0 {
-	case true:
-		pipeline = make(chan messageErrorPair)
-	case false:
-		pipeline = make(chan messageErrorPair, queue_len)
+	if t == nil {
+		return	nil, nil
 	}
 
+	if queue_len <= 0 {
+		pipeline = make(chan messageErrorPair)
+	} else {
+		pipeline = make(chan messageErrorPair, queue_len)
+	}
 
 	r := &Receiver{
 		listener:  listener,
@@ -150,6 +155,7 @@ func (r *Receiver) tokenize(conn io.ReadCloser, chan_err chan<- error) {
 	}
 }
 
+// Read an incoming syslog message and a possible error that occured during the decoding of this syslog message
 func (r *Receiver) Receive() (MessageImmutable, error, bool) {
 	pair, end := <-r.pipeline
 

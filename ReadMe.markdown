@@ -16,7 +16,7 @@ type someSD struct{
 
 func main() {
 	// create a connection to a server
-	sl_conn,_:= syslog5424.Dial( "stdio", "stderr" )
+	sl_conn, _, _ := syslog5424.Dial( "stdio", "stderr:" )
 
 	// create a syslog wrapper around the connection
 	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test-app" )

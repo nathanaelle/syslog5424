@@ -3,8 +3,8 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 import (
 	"io"
 	"net"
-	"time"
 	"sync"
+	"time"
 )
 
 type (
@@ -24,13 +24,13 @@ type (
 	Sender struct {
 		connector     Connector
 		output        io.WriteCloser
-		end_asked	chan struct{}
+		end_asked     chan struct{}
 		end_completed chan struct{}
 		ticker        <-chan time.Time
 		transport     Transport
 		err_chan      chan error
-		lock		*sync.Mutex
-		queue		*net.Buffers
+		lock          *sync.Mutex
+		queue         *net.Buffers
 	}
 
 	Addr struct {
@@ -46,24 +46,21 @@ func (f ConnectorFunc) Connect() (WriteCloser, error) {
 // Create a new sender
 func NewSender(output Connector, transport Transport, ticker <-chan time.Time) (*Sender, <-chan error) {
 	s := &Sender{
-		end_asked:      make(chan struct{}),
+		end_asked:     make(chan struct{}),
 		end_completed: make(chan struct{}),
 		connector:     output,
 		ticker:        ticker,
 		transport:     transport,
 		err_chan:      make(chan error, 1),
-		lock:		new(sync.Mutex),
-		queue:		new(net.Buffers),
-
+		lock:          new(sync.Mutex),
+		queue:         new(net.Buffers),
 	}
 	*s.queue = make([][]byte, 0, 1000)
-
 
 	go s.run_queue()
 
 	return s, s.err_chan
 }
-
 
 func (c *Sender) flush_queue() {
 	if c.output == nil {
@@ -94,8 +91,6 @@ func (c *Sender) flush_queue() {
 	//log.Printf("<--\tget unlock")
 }
 
-
-
 func (c *Sender) run_queue() {
 	defer func() {
 		for len(*c.queue) > 0 {
@@ -121,7 +116,7 @@ func (c *Sender) run_queue() {
 
 // send a Message to the log_sender goroutine
 func (c *Sender) Send(m Message) (err error) {
-	var msg	[]byte
+	var msg []byte
 
 	msg, err = m.Marshal5424()
 	if err != nil {

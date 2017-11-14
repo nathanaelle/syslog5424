@@ -14,9 +14,8 @@ type (
 )
 
 var (
-	ErrorBufferClose         error = errors.New("error in syslog5424 at buffer.Close()")
-	ErrorNoConnecion         error = errors.New("No Connection established")
-	ERR_TRANSPORT_INCOMPLETE error = errors.New("Transport : Incomplete Message")
+	ErrorBufferClose error = errors.New("error in syslog5424 at buffer.Close()")
+	ErrorNoConnecion error = errors.New("No Connection established")
 
 	ErrorPos0                error = errors.New("Pos 0 Found")
 	ErrorPosNotFound         error = errors.New("Pos Not Found")
@@ -24,6 +23,10 @@ var (
 	ErrorInvalidNetwork      error = errors.New("Invalid Network")
 	ErrorInvalidAddress      error = errors.New("Invalid Address")
 	ErrorEmptyNetworkAddress error = errors.New("Empty Network or Address")
+
+	ERR_TRANSPORT_INCOMPLETE error = errors.New("Transport : Incomplete Message")
+	ERR_TRANSPORT_NOHEADER   error = errors.New("T_RFC5425 Split: no header len")
+	ERR_TRANSPORT_INVHEADER  error = errors.New("T_RFC5425 Split: invalid header len")
 )
 
 func (pe ParseError) Error() string {

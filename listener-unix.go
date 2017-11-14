@@ -7,7 +7,7 @@ import (
 
 type (
 	unix_receiver struct {
-		listener  *net.UnixListener
+		listener *net.UnixListener
 	}
 )
 

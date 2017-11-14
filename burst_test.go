@@ -25,9 +25,9 @@ func Test_Burst(t *testing.T) {
 		{"u5425", "unix", T_RFC5425},
 		{"ulf", "unix", T_LFENDED},
 		{"uzero", "unix", T_ZEROENDED},
-/*		{"dlf", "unixgram", T_LFENDED},
-		{"dzero", "unixgram", T_ZEROENDED},
-		{"d5425", "unixgram", T_RFC5425}, */
+		/*		{"dlf", "unixgram", T_LFENDED},
+				{"dzero", "unixgram", T_ZEROENDED},
+				{"d5425", "unixgram", T_RFC5425}, */
 	}
 
 	for _, s := range seq {

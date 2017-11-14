@@ -3,8 +3,8 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 import (
 	"./sdata"
 	"bytes"
-	"time"
 	"io"
+	"time"
 	//	"log"
 )
 
@@ -120,7 +120,7 @@ func (m MessageImmutable) Writable() Message {
 	return Message{m.Priority(), m.TimeStamp(), m.Hostname(), m.AppName(), m.ProcID(), m.MsgID(), m.StructuredData(), m.Text()}
 }
 
-func (msg MessageImmutable)WriteTo(w io.Writer) (n int64, err error) {
+func (msg MessageImmutable) WriteTo(w io.Writer) (n int64, err error) {
 	in, err := w.Write(msg.buffer)
 	n = int64(in)
 	return
@@ -234,7 +234,7 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 
 func dispatch_error(main_err, err error) (ret_err error) {
 	switch main_err {
-	case	nil:
+	case nil:
 		ret_err = err
 	default:
 		ret_err = main_err
@@ -242,8 +242,7 @@ func dispatch_error(main_err, err error) (ret_err error) {
 	return
 }
 
-
-func parse_return(msg MessageImmutable, transport Transport, atEOF bool, o_data, o_rest []byte)(ret_msg MessageImmutable, data, rest []byte, main_err error) {
+func parse_return(msg MessageImmutable, transport Transport, atEOF bool, o_data, o_rest []byte) (ret_msg MessageImmutable, data, rest []byte, main_err error) {
 	data = o_data
 	rest = o_rest
 

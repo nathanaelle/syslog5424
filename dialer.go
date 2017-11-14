@@ -15,7 +15,6 @@ type (
 // Dial opens a connection to the syslog daemon
 // network can be "stdio", "unix", "unixgram", "tcp", "tcp4", "tcp6"
 // used Transport is the "common" transport for the network.
-// QueueLen is preset to 100 Message
 // FlushDelay is preset to 500ms
 func Dial(network, address string) (*Sender, <-chan error, error) {
 	return (Dialer{
@@ -27,6 +26,8 @@ func Dial(network, address string) (*Sender, <-chan error, error) {
 // network can be "stdio", "unix", "unixgram", "tcp", "tcp4", "tcp6"
 // Transport can be nil.
 // if Transport is nil the "common" transport for the wished network is used.
+//
+// the returned `<-chan error` is used to collect errors than may occur in goroutine
 func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan error, error) {
 	var ticker <-chan time.Time
 	var c Connector
