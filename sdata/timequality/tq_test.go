@@ -2,8 +2,7 @@ package timequality // import "github.com/nathanaelle/syslog5424/sdata/timequali
 
 import (
 	"testing"
-	//	"github.com/nathanaelle/syslog5424/sdata"
-	"../../sdata"
+	"github.com/nathanaelle/syslog5424/sdata"
 )
 
 func pint(a int) *int {

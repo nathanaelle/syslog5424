@@ -1,8 +1,8 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"./sdata"
-	tq "./sdata/timequality"
+	"github.com/nathanaelle/syslog5424/sdata"
+	tq "github.com/nathanaelle/syslog5424/sdata/timequality"
 	"math"
 	"testing"
 	"time"
