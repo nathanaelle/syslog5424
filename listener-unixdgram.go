@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net"
 	"os"
-	"time"
 )
 
 type (
@@ -15,10 +14,10 @@ type (
 	}
 
 	fake_conn struct {
-		addr  net.Addr
-		buff  []byte
-		queue chan []byte
-		end   chan struct{}
+		end      chan struct{}
+		rbuff	[1<<16]byte
+		buff	[]byte
+		conn	*net.UnixConn
 	}
 )
 
@@ -70,18 +69,15 @@ func (r *unixgram_receiver) Accept() (DataReader, error) {
 	r.accepted = true
 
 	fc := &fake_conn{
-		addr:  r.listener.RemoteAddr(),
-		queue: make(chan []byte, 1000),
 		end:   r.end,
+		conn:  r.listener,
 	}
-
-	go fc.run_queue(r.listener)
 
 	return fc, nil
 }
 
 func (r *fake_conn) RemoteAddr() net.Addr {
-	return r.addr
+	return r.conn.RemoteAddr()
 }
 
 func (r *fake_conn) Close() error {
@@ -90,7 +86,13 @@ func (r *fake_conn) Close() error {
 
 func (r *fake_conn) Read(data []byte) (int, error) {
 	if len(r.buff) == 0 {
-		r.buff = <-r.queue
+		s, _, err := r.conn.ReadFrom(r.rbuff[:])
+		if err != nil {
+			return	s, err
+		}
+
+		r.buff = make([]byte, s)
+		copy(r.buff, r.rbuff[0:s])
 	}
 
 	l_r := len(r.buff)
@@ -105,36 +107,4 @@ func (r *fake_conn) Read(data []byte) (int, error) {
 	r.buff = nil
 
 	return l_r, nil
-}
-
-func (r *fake_conn) run_queue(conn *net.UnixConn) {
-	defer conn.Close()
-
-	for {
-		select {
-		case <-r.end:
-			return
-
-		default:
-			buffer := make([]byte, readBuffer)
-
-			conn.SetReadDeadline(time.Now().Add(1000 * time.Millisecond))
-			s, _, err := conn.ReadFrom(buffer)
-			switch t_err := err.(type) {
-			case nil:
-			case net.Error:
-				if !t_err.Timeout() {
-					panic(err)
-				}
-			default:
-				panic(err)
-			}
-
-			if s > 0 {
-				r.queue <- buffer[0:s]
-			}
-
-		}
-	}
-
 }

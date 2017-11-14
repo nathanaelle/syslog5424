@@ -5,6 +5,8 @@ import (
 	"net"
 	"sync"
 	"time"
+	"syscall"
+	"os"
 )
 
 type (
@@ -73,21 +75,31 @@ func (c *Sender) flush_queue() {
 
 	//log.Printf("<--\tget lock for %d items", len(*c.queue))
 	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	for len(*c.queue) > 0 {
 		_, err := c.queue.WriteTo(c.output)
-		//log.Printf("wrote %d", size)
-		if err != nil {
+
+		switch t_err := err.(type) {
+		case	nil:
+		case	*net.OpError:
+			if s_err, ok := t_err.Err.(*os.SyscallError); ok && s_err.Err == syscall.ENOBUFS {
+				return
+			}
 			c.err_chan <- err
 			c.output = nil
-			break
+			return
+
+		default:
+			c.err_chan <- err
+			c.output = nil
+			return
 		}
 	}
 
 	if len(*c.queue) == 0 && cap(*c.queue) == 0 {
 		*c.queue = make([][]byte, 0, 100)
 	}
-	c.lock.Unlock()
 	//log.Printf("<--\tget unlock")
 }
 
