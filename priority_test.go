@@ -51,7 +51,7 @@ func Test_Priority_Marshal5424(t *testing.T) {
 		z := Priority(i)
 		m, err := z.Marshal5424()
 		if err != nil {
-			t.Errorf("%d marshal got err: %v", err)
+			t.Errorf("%d marshal got err: %v", i, err)
 			return
 		}
 		a := string(m)
