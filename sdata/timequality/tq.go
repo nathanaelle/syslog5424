@@ -1,8 +1,7 @@
 package timequality // import "github.com/nathanaelle/syslog5424/sdata/timequality"
 
 import (
-	//	"github.com/nathanaelle/syslog5424/sdata"
-	"../../sdata"
+	"github.com/nathanaelle/syslog5424/sdata"
 	"errors"
 	"math"
 	"strconv"
