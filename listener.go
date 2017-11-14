@@ -49,7 +49,7 @@ func NewReceiver(listener Listener, queue_len int, t Transport) (*Receiver, <-ch
 	var pipeline chan messageErrorPair
 
 	if t == nil {
-		return	nil, nil
+		return nil, nil
 	}
 
 	if queue_len <= 0 {

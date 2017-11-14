@@ -14,10 +14,10 @@ type (
 	}
 
 	fake_conn struct {
-		end      chan struct{}
-		rbuff	[1<<16]byte
-		buff	[]byte
-		conn	*net.UnixConn
+		end   chan struct{}
+		rbuff [1 << 16]byte
+		buff  []byte
+		conn  *net.UnixConn
 	}
 )
 
@@ -69,8 +69,8 @@ func (r *unixgram_receiver) Accept() (DataReader, error) {
 	r.accepted = true
 
 	fc := &fake_conn{
-		end:   r.end,
-		conn:  r.listener,
+		end:  r.end,
+		conn: r.listener,
 	}
 
 	return fc, nil
@@ -88,7 +88,7 @@ func (r *fake_conn) Read(data []byte) (int, error) {
 	if len(r.buff) == 0 {
 		s, _, err := r.conn.ReadFrom(r.rbuff[:])
 		if err != nil {
-			return	s, err
+			return s, err
 		}
 
 		r.buff = make([]byte, s)

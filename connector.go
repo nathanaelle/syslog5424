@@ -3,10 +3,10 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 import (
 	"io"
 	"net"
-	"sync"
-	"time"
-	"syscall"
 	"os"
+	"sync"
+	"syscall"
+	"time"
 )
 
 type (
@@ -81,8 +81,8 @@ func (c *Sender) flush_queue() {
 		_, err := c.queue.WriteTo(c.output)
 
 		switch t_err := err.(type) {
-		case	nil:
-		case	*net.OpError:
+		case nil:
+		case *net.OpError:
 			if s_err, ok := t_err.Err.(*os.SyscallError); ok && s_err.Err == syscall.ENOBUFS {
 				return
 			}
