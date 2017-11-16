@@ -62,7 +62,7 @@ func TestTransport_T_RFC5425(t *testing.T) {
 func transportPrefixTester(t *testing.T, transport Transport, atEOF bool, buffer, data, rest []byte, err error) {
 	d, r, e := transport.PrefixStrip(buffer, atEOF)
 	if !bytes.Equal(data, d) || !bytes.Equal(rest, r) || err != e {
-		t.Error(fmt.Errorf("For Prefix {%q}\n  Expected {%q} {%q} %v\n  Got: {%q} {%q} %v\n", buffer, data, rest, err, d, r, e))
+		t.Error(fmt.Errorf("For Prefix {%q}\n  Expected {%q} {%q} %v\n  Got: {%q} {%q} %v", buffer, data, rest, err, d, r, e))
 		t.Fail()
 	}
 }
@@ -70,7 +70,7 @@ func transportPrefixTester(t *testing.T, transport Transport, atEOF bool, buffer
 func transportSuffixTester(t *testing.T, transport Transport, atEOF bool, buffer, data, rest []byte, err error) {
 	d, r, e := transport.SuffixStrip(buffer, atEOF)
 	if !bytes.Equal(data, d) || !bytes.Equal(rest, r) || err != e {
-		t.Error(fmt.Errorf("For Suffix {%q}\n  Expected {%q} {%q} %v\n  Got: {%q} {%q} %v\n", buffer, data, rest, err, d, r, e))
+		t.Error(fmt.Errorf("For Suffix {%q}\n  Expected {%q} {%q} %v\n  Got: {%q} {%q} %v", buffer, data, rest, err, d, r, e))
 		t.Fail()
 	}
 }

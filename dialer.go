@@ -74,6 +74,6 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan erro
 		return nil, nil, ErrorNoConnecion
 	}
 
-	sndr, chan_err := NewSender(c, t, ticker)
-	return sndr, chan_err, nil
+	sndr, chanErr := NewSender(c, t, ticker)
+	return sndr, chanErr, nil
 }

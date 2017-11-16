@@ -7,17 +7,17 @@ import (
 
 type (
 	// Encode frame in NULL terminated frame
-	t_ZEROENDED struct{}
+	tZeroEnded struct{}
 
 	// Encode frame in LF terminated frame
-	t_LFENDED struct{}
+	tLFEnded struct{}
 
 	// Encode frame in RFC 5425 formated frame
 	// RFC 5425 Format format is :
 	// len([]byte) ' ' []byte
-	t_RFC5425 struct{}
+	tRFC5425 struct{}
 
-	t_GUESS struct{}
+	tGuess struct{}
 
 	Transport interface {
 		// Set the sub conn where to write the transport-encoded data
@@ -34,29 +34,29 @@ type (
 )
 
 var (
-	// commonly used transport with "unix" and "unixgram"
-	T_ZEROENDED Transport = t_ZEROENDED{}
+	// T_ZEROENDED is commonly used transport with "unix" and "unixgram"
+	T_ZEROENDED Transport = tZeroEnded{}
 
-	// commonly used transport with "tcp" "tcp4" and "tcp6"
-	T_LFENDED Transport = t_LFENDED{}
+	// T_LFENDED is commonly used transport with "tcp" "tcp4" and "tcp6"
+	T_LFENDED Transport = tLFEnded{}
 
-	// performant transport specified in RFC 5425
-	T_RFC5425 Transport = t_RFC5425{}
+	// T_RFC5425 is performant transport specified in RFC 5425
+	T_RFC5425 Transport = tRFC5425{}
 )
 
-func (t t_ZEROENDED) String() string {
+func (t tZeroEnded) String() string {
 	return "zero ended transport"
 }
 
-func (t t_LFENDED) String() string {
+func (t tLFEnded) String() string {
 	return "lf ended transport"
 }
 
-func (t t_RFC5425) String() string {
+func (t tRFC5425) String() string {
 	return "rfc 5425 transport"
 }
 
-func (t t_ZEROENDED) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+func (t tZeroEnded) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {
 		return nil, nil, nil
 	}
@@ -64,14 +64,14 @@ func (t t_ZEROENDED) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, 
 	return buffer, nil, nil
 }
 
-func (t t_LFENDED) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+func (t tLFEnded) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {
 		return nil, nil, nil
 	}
 	return buffer, nil, nil
 }
 
-func (t t_RFC5425) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+func (t tRFC5425) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {
 		return nil, nil, nil
 	}
@@ -85,24 +85,24 @@ func (t t_RFC5425) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, er
 		return nil, nil, ERR_TRANSPORT_NOHEADER
 	}
 
-	msg_len, err := strconv.Atoi(string(buffer[0:sep_pos]))
+	lenMsg, err := strconv.Atoi(string(buffer[0:sep_pos]))
 	if err != nil {
 		return nil, nil, ERR_TRANSPORT_INVHEADER
 	}
 
 	start := sep_pos + 1
-	buf_len := start + msg_len
-	if len(buffer) < buf_len {
+	lenBuff := start + lenMsg
+	if len(buffer) < lenBuff {
 		if atEOF {
 			return buffer[start:], nil, ERR_TRANSPORT_INCOMPLETE
 		}
 		return nil, nil, nil
 	}
 
-	return buffer[start:buf_len], buffer[buf_len:], nil
+	return buffer[start:lenBuff], buffer[lenBuff:], nil
 }
 
-func (t t_ZEROENDED) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+func (t tZeroEnded) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {
 		return nil, nil, nil
 	}
@@ -119,7 +119,7 @@ func (t t_ZEROENDED) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, 
 	return buffer, nil, nil
 }
 
-func (t t_LFENDED) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+func (t tLFEnded) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {
 		return nil, nil, nil
 	}
@@ -135,7 +135,7 @@ func (t t_LFENDED) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, er
 	return buffer, nil, nil
 }
 
-func (t t_RFC5425) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+func (t tRFC5425) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
 	if buffer == nil || len(buffer) == 0 {
 		return nil, nil, nil
 	}
@@ -144,19 +144,19 @@ func (t t_RFC5425) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, er
 
 // Write a NULL terminated message.
 // see (Conn interface)[#Conn]
-func (t t_ZEROENDED) Encode(d []byte) []byte {
+func (t tZeroEnded) Encode(d []byte) []byte {
 	return append(d, byte(0))
 }
 
 // Write a LF terminated message
 // see (Conn interface)[#Conn]
-func (t t_LFENDED) Encode(d []byte) []byte {
+func (t tLFEnded) Encode(d []byte) []byte {
 	return append(d, '\n')
 }
 
 // Write a RFC 5425 formated message
 // see (Conn interface)[#Conn]
-func (t t_RFC5425) Encode(d []byte) []byte {
+func (t tRFC5425) Encode(d []byte) []byte {
 	l := len(d)
 	h := []byte(strconv.Itoa(l))
 	ret := make([]byte, l+len(h)+1)

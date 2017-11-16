@@ -45,17 +45,17 @@ const readBuffer = 1 << 18
 // this case may occurs when transport is unknown at compile time
 //
 // the returned `<-chan error` is used to collect errors than may occur in goroutine
-func NewReceiver(listener Listener, queue_len int, t Transport) (*Receiver, <-chan error) {
+func NewReceiver(listener Listener, lenQueue int, t Transport) (*Receiver, <-chan error) {
 	var pipeline chan messageErrorPair
 
 	if t == nil {
 		return nil, nil
 	}
 
-	if queue_len <= 0 {
+	if lenQueue <= 0 {
 		pipeline = make(chan messageErrorPair)
 	} else {
-		pipeline = make(chan messageErrorPair, queue_len)
+		pipeline = make(chan messageErrorPair, lenQueue)
 	}
 
 	r := &Receiver{
@@ -65,14 +65,14 @@ func NewReceiver(listener Listener, queue_len int, t Transport) (*Receiver, <-ch
 		end:       make(chan struct{}),
 	}
 
-	chan_err := make(chan error, 10)
+	chanErr := make(chan error, 10)
 
-	go r.run_queue(chan_err)
+	go r.runQueue(chanErr)
 
-	return r, chan_err
+	return r, chanErr
 }
 
-func (r *Receiver) run_queue(chan_err chan<- error) {
+func (r *Receiver) runQueue(chanErr chan<- error) {
 	defer r.listener.Close()
 	defer close(r.pipeline)
 
@@ -84,16 +84,16 @@ func (r *Receiver) run_queue(chan_err chan<- error) {
 		default:
 			conn, err := r.listener.Accept()
 			if err != nil {
-				chan_err <- err
+				chanErr <- err
 			}
 
-			go r.tokenize(conn, chan_err)
+			go r.tokenize(conn, chanErr)
 		}
 	}
 
 }
 
-func (r *Receiver) tokenize(conn io.ReadCloser, chan_err chan<- error) {
+func (r *Receiver) tokenize(conn io.ReadCloser, chanErr chan<- error) {
 	defer conn.Close()
 
 	var eof bool
@@ -103,45 +103,45 @@ func (r *Receiver) tokenize(conn io.ReadCloser, chan_err chan<- error) {
 	total := 0
 	buffer := make([]byte, readBuffer)
 	for {
-		read_len, err := conn.Read(buffer[done:])
-		total += read_len
+		lenRead, err := conn.Read(buffer[done:])
+		total += lenRead
 		if err == io.EOF {
 			eof = true
 			err = nil
 		}
-		//log.Printf("EOF\t%v %v %v %v", count, total, read_len, err)
+		//log.Printf("EOF\t%v %v %v %v", count, total, lenRead, err)
 
 		if err != nil {
-			chan_err <- err
+			chanErr <- err
 		}
-		if read_len == 0 && eof {
+		if lenRead == 0 && eof {
 			return
 		}
-		if read_len == 0 {
+		if lenRead == 0 {
 			continue
 		}
 
-		read_len += done
-		data := buffer[0:read_len]
+		lenRead += done
+		data := buffer[0:lenRead]
 		for {
-			msg, rest, m_err := Parse(data, r.transport, eof)
+			msg, rest, parseErr := Parse(data, r.transport, eof)
 
 			if rest == nil {
-				//log.Printf("NIL\t{%q} {%q} %v %v %v", msg, data[0:10], len(rest), rest == nil, m_err)
-				//log.Printf("NIL\t%v %v %v %v", count, total, read_len, m_err)
+				//log.Printf("NIL\t{%q} {%q} %v %v %v", msg, data[0:10], len(rest), rest == nil, parseErr)
+				//log.Printf("NIL\t%v %v %v %v", count, total, lenRead, parseErr)
 				break
 			}
 			data = rest
 
 			count++
-			r.pipeline <- messageErrorPair{msg, m_err}
+			r.pipeline <- messageErrorPair{msg, parseErr}
 			if len(rest) == 0 {
 				break
 			}
 		}
 
 		done = len(data)
-		buffer = buffer[read_len-done:]
+		buffer = buffer[lenRead-done:]
 
 		if len(buffer) < 500 {
 			old := buffer

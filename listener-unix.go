@@ -29,7 +29,7 @@ func UnixListener(address string) (Listener, error) {
 			return nil, err
 		}
 
-		if _, r_err := os.Stat(address); r_err != nil {
+		if _, osErr := os.Stat(address); osErr != nil {
 			return nil, err
 		}
 		os.Remove(address)

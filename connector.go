@@ -24,15 +24,15 @@ type (
 
 	// Sender describe the generic algorithm for sending Message through a connection
 	Sender struct {
-		connector     Connector
-		output        io.WriteCloser
-		end_asked     chan struct{}
-		end_completed chan struct{}
-		ticker        <-chan time.Time
-		transport     Transport
-		err_chan      chan error
-		lock          *sync.Mutex
-		queue         *net.Buffers
+		connector    Connector
+		output       io.WriteCloser
+		endAsked     chan struct{}
+		endCompleted chan struct{}
+		ticker       <-chan time.Time
+		transport    Transport
+		errChan      chan error
+		lock         *sync.Mutex
+		queue        *net.Buffers
 	}
 
 	Addr struct {
@@ -48,27 +48,27 @@ func (f ConnectorFunc) Connect() (WriteCloser, error) {
 // Create a new sender
 func NewSender(output Connector, transport Transport, ticker <-chan time.Time) (*Sender, <-chan error) {
 	s := &Sender{
-		end_asked:     make(chan struct{}),
-		end_completed: make(chan struct{}),
-		connector:     output,
-		ticker:        ticker,
-		transport:     transport,
-		err_chan:      make(chan error, 1),
-		lock:          new(sync.Mutex),
-		queue:         new(net.Buffers),
+		endAsked:     make(chan struct{}),
+		endCompleted: make(chan struct{}),
+		connector:    output,
+		ticker:       ticker,
+		transport:    transport,
+		errChan:      make(chan error, 1),
+		lock:         new(sync.Mutex),
+		queue:        new(net.Buffers),
 	}
 	*s.queue = make([][]byte, 0, 1000)
 
-	go s.run_queue()
+	go s.runQueue()
 
-	return s, s.err_chan
+	return s, s.errChan
 }
 
-func (c *Sender) flush_queue() {
+func (c *Sender) flushQueue() {
 	if c.output == nil {
 		var err error
 		if c.output, err = c.connector.Connect(); err != nil {
-			c.err_chan <- err
+			c.errChan <- err
 			return
 		}
 	}
@@ -80,18 +80,18 @@ func (c *Sender) flush_queue() {
 	for len(*c.queue) > 0 {
 		_, err := c.queue.WriteTo(c.output)
 
-		switch t_err := err.(type) {
+		switch typeErr := err.(type) {
 		case nil:
 		case *net.OpError:
-			if s_err, ok := t_err.Err.(*os.SyscallError); ok && s_err.Err == syscall.ENOBUFS {
+			if sysErr, ok := typeErr.Err.(*os.SyscallError); ok && sysErr.Err == syscall.ENOBUFS {
 				return
 			}
-			c.err_chan <- err
+			c.errChan <- err
 			c.output = nil
 			return
 
 		default:
-			c.err_chan <- err
+			c.errChan <- err
 			c.output = nil
 			return
 		}
@@ -103,22 +103,22 @@ func (c *Sender) flush_queue() {
 	//log.Printf("<--\tget unlock")
 }
 
-func (c *Sender) run_queue() {
+func (c *Sender) runQueue() {
 	defer func() {
 		for len(*c.queue) > 0 {
-			c.flush_queue()
+			c.flushQueue()
 		}
 		c.output.Close()
-		close(c.end_completed)
-		close(c.err_chan)
+		close(c.endCompleted)
+		close(c.errChan)
 	}()
 
 	for {
 		select {
 		case <-c.ticker:
-			c.flush_queue()
+			c.flushQueue()
 
-		case _, opened := <-c.end_asked:
+		case _, opened := <-c.endAsked:
 			if !opened {
 				return
 			}
@@ -144,8 +144,8 @@ func (c *Sender) Send(m Message) (err error) {
 
 // terminate the log_sender goroutine
 func (c *Sender) End() {
-	close(c.end_asked)
-	<-c.end_completed
+	close(c.endAsked)
+	<-c.endCompleted
 }
 
 func (a *Addr) String() string {

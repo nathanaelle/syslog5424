@@ -11,12 +11,12 @@ func ExampleSyslogClient() {
 		return t
 	}
 
-	sl_conn, _, err := Dial("stdio", "stdout:")
+	slConn, _, err := Dial("stdio", "stdout:")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "test-app")
+	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "test-app")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func ExampleSyslogClient() {
 	conflog.Channel(LOG_ERR).Log("another message with structured data", GenericSD(someSD{"some message", 42}))
 
 	// closing the connection and flushing all remaining logs
-	sl_conn.End()
+	slConn.End()
 
 	// Output:
 	// <27>1 2014-12-20T14:04:00Z localhost test-app/configuration 1234 - - ERR : doing some stuff

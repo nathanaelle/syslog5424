@@ -7,13 +7,13 @@ import (
 )
 
 type (
-	unixgram_receiver struct {
+	unixgramReceiver struct {
 		listener *net.UnixConn
 		accepted bool
 		end      chan struct{}
 	}
 
-	fake_conn struct {
+	fakeConn struct {
 		end   chan struct{}
 		rbuff [1 << 16]byte
 		buff  []byte
@@ -24,7 +24,7 @@ type (
 func UnixgramListener(address string) (Listener, error) {
 	var err error
 
-	r := new(unixgram_receiver)
+	r := new(unixgramReceiver)
 	r.end = make(chan struct{})
 
 	r.listener, err = net.ListenUnixgram("unixgram", &net.UnixAddr{address, "unixgram"})
@@ -39,7 +39,7 @@ func UnixgramListener(address string) (Listener, error) {
 			return nil, err
 		}
 
-		if _, r_err := os.Stat(address); r_err != nil {
+		if _, osErr := os.Stat(address); osErr != nil {
 			return nil, err
 		}
 		os.Remove(address)
@@ -54,13 +54,13 @@ func UnixgramListener(address string) (Listener, error) {
 	return r, nil
 }
 
-func (r *unixgram_receiver) Close() error {
+func (r *unixgramReceiver) Close() error {
 	close(r.end)
 	return r.listener.Close()
 }
 
 // mimic an Accept
-func (r *unixgram_receiver) Accept() (DataReader, error) {
+func (r *unixgramReceiver) Accept() (DataReader, error) {
 	if r.accepted {
 		<-r.end
 		return nil, errors.New("end")
@@ -68,7 +68,7 @@ func (r *unixgram_receiver) Accept() (DataReader, error) {
 
 	r.accepted = true
 
-	fc := &fake_conn{
+	fc := &fakeConn{
 		end:  r.end,
 		conn: r.listener,
 	}
@@ -76,15 +76,15 @@ func (r *unixgram_receiver) Accept() (DataReader, error) {
 	return fc, nil
 }
 
-func (r *fake_conn) RemoteAddr() net.Addr {
+func (r *fakeConn) RemoteAddr() net.Addr {
 	return r.conn.RemoteAddr()
 }
 
-func (r *fake_conn) Close() error {
+func (r *fakeConn) Close() error {
 	return nil
 }
 
-func (r *fake_conn) Read(data []byte) (int, error) {
+func (r *fakeConn) Read(data []byte) (int, error) {
 	if len(r.buff) == 0 {
 		s, _, err := r.conn.ReadFrom(r.rbuff[:])
 		if err != nil {
@@ -95,16 +95,16 @@ func (r *fake_conn) Read(data []byte) (int, error) {
 		copy(r.buff, r.rbuff[0:s])
 	}
 
-	l_r := len(r.buff)
-	l_d := len(data)
-	if l_d <= l_r {
-		copy(data[:], r.buff[0:l_d])
-		r.buff = r.buff[l_d:]
-		return l_d, nil
+	lenBuff := len(r.buff)
+	lenData := len(data)
+	if lenData <= lenBuff {
+		copy(data[:], r.buff[0:lenData])
+		r.buff = r.buff[lenData:]
+		return lenData, nil
 	}
 
-	copy(data[0:l_r], r.buff[:])
+	copy(data[0:lenBuff], r.buff[:])
 	r.buff = nil
 
-	return l_r, nil
+	return lenBuff, nil
 }

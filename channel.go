@@ -78,16 +78,16 @@ func (d *trueChannel) Msgid(msgid string) Channel {
 	}
 }
 
-func (d *msgChannel) Logger(prefix string) *log.Logger {
-	switch d.priority.Severity() {
+func (c *msgChannel) Logger(prefix string) *log.Logger {
+	switch c.priority.Severity() {
 	case LOG_DEBUG:
-		return log.New(d, prefix, log.Lshortfile)
+		return log.New(c, prefix, log.Lshortfile)
 	default:
-		return log.New(d, prefix, 0)
+		return log.New(c, prefix, 0)
 	}
 }
 
-func (d *msgChannel) IsDevNull() bool {
+func (c *msgChannel) IsDevNull() bool {
 	return false
 }
 
@@ -108,8 +108,8 @@ func (c *msgChannel) Log(d string, sd ...sdata.StructuredData) {
 
 //	/dev/null Logger
 // Nothing is logged
-func (d *devnull) Logger(prefix string) *log.Logger {
-	return log.New(d, prefix, 0)
+func (dn *devnull) Logger(prefix string) *log.Logger {
+	return log.New(dn, prefix, 0)
 }
 
 func (dn *devnull) IsDevNull() bool {

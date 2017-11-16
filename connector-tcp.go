@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	tcp_conn struct {
+	tcpConn struct {
 		network, address string
 	}
 )
@@ -28,18 +28,18 @@ func TCPConnector(network, address string) Connector {
 
 	}
 
-	return &tcp_conn{network, address}
+	return &tcpConn{network, address}
 }
 
-func (c *tcp_conn) Connect() (conn WriteCloser, err error) {
+func (c *tcpConn) Connect() (conn WriteCloser, err error) {
 	port := 514
-	addr, s_port, err := net.SplitHostPort(c.address)
+	addr, portStr, err := net.SplitHostPort(c.address)
 	if err != nil {
 		return nil, err
 	}
 
-	if s_port != "" {
-		port, err = strconv.Atoi(s_port)
+	if portStr != "" {
+		port, err = strconv.Atoi(portStr)
 		if err != nil {
 			return nil, err
 		}

@@ -2,9 +2,10 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
 	"bytes"
-	"github.com/nathanaelle/syslog5424/sdata"
 	"io"
 	"time"
+
+	"github.com/nathanaelle/syslog5424/sdata"
 	//	"log"
 )
 
@@ -126,14 +127,14 @@ func (msg MessageImmutable) WriteTo(w io.Writer) (n int64, err error) {
 	return
 }
 
-func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutable, rest []byte, main_err error) {
+func Parse(data []byte, transport Transport, atEOF bool) (returnMsg MessageImmutable, rest []byte, mainErr error) {
 	sep_sp := []byte{' '}
 	sep_brk := []byte{']'}
 
 	if transport != nil {
-		data, rest, main_err = transport.PrefixStrip(data, atEOF)
-		//log.Printf("P {%q} {%q} %v\n", data, rest, main_err)
-		if data == nil && rest == nil && main_err == nil {
+		data, rest, mainErr = transport.PrefixStrip(data, atEOF)
+		//log.Printf("P {%q} {%q} %v\n", data, rest, mainErr)
+		if data == nil && rest == nil && mainErr == nil {
 			return
 		}
 	}
@@ -150,7 +151,7 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 		end, err := search_next_sep(data[begin:], sep_sp)
 		if err != nil {
 			//log.Printf("%s index %#d parts %d rest %s ", string(msg.buffer), msg.index, parts, data[begin:])
-			main_err = dispatch_error(main_err, err)
+			mainErr = dispatchError(mainErr, err)
 			return
 		}
 		msg.index = append(msg.index, begin+end)
@@ -159,36 +160,36 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 	}
 
 	if len(data[begin:]) == 0 {
-		main_err = dispatch_error(main_err, ParseError{data, begin, "empty field expected"})
+		mainErr = dispatchError(mainErr, ParseError{data, begin, "empty field expected"})
 		return
 	}
 
 	if len(data[begin:]) == 1 {
 		if data[begin] != '-' {
-			main_err = dispatch_error(main_err, ParseError{data, begin, "empty field expected"})
+			mainErr = dispatchError(mainErr, ParseError{data, begin, "empty field expected"})
 			return
 		}
 		msg.index = append(msg.index, begin+2)
 
-		ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
+		returnMsg, data, rest, mainErr = parseReturn(msg, transport, atEOF, data, rest)
 		return
 	}
 
 	end, err := search_next_sep(data[begin:], sep_sp)
 	if err != nil {
-		main_err = dispatch_error(main_err, err)
+		mainErr = dispatchError(mainErr, err)
 		return
 	}
 
 	if end == 1 {
 		if data[begin] != '-' {
-			main_err = dispatch_error(main_err, ParseError{data, begin, "empty structured data expected"})
+			mainErr = dispatchError(mainErr, ParseError{data, begin, "empty structured data expected"})
 			return
 		}
 
 		msg.index = append(msg.index, begin+1)
 		msg.text = begin + 2
-		ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
+		returnMsg, data, rest, mainErr = parseReturn(msg, transport, atEOF, data, rest)
 		return
 	}
 
@@ -208,57 +209,57 @@ func Parse(data []byte, transport Transport, atEOF bool) (ret_msg MessageImmutab
 				begin = t + end + 1
 				t = begin
 				if len(data) <= begin {
-					ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
+					returnMsg, data, rest, mainErr = parseReturn(msg, transport, atEOF, data, rest)
 					return
 				}
 				continue
 			}
 
-			main_err = dispatch_error(main_err, ParseError{data, t + end - 1, `\\ or " expected`})
+			mainErr = dispatchError(mainErr, ParseError{data, t + end - 1, `\\ or " expected`})
 			return
 
 		case ErrorPosNotFound:
 			msg.text = begin + 1
 
-			ret_msg, data, rest, main_err = parse_return(msg, transport, atEOF, data, rest)
+			returnMsg, data, rest, mainErr = parseReturn(msg, transport, atEOF, data, rest)
 			return
 
 		default:
-			main_err = dispatch_error(main_err, err)
+			mainErr = dispatchError(mainErr, err)
 			return
 		}
 	}
-	main_err = dispatch_error(main_err, ErrorImpossible)
+	mainErr = dispatchError(mainErr, ErrorImpossible)
 	return
 }
 
-func dispatch_error(main_err, err error) (ret_err error) {
-	switch main_err {
+func dispatchError(mainErr, err error) (returnErr error) {
+	switch mainErr {
 	case nil:
-		ret_err = err
+		returnErr = err
 	default:
-		ret_err = main_err
+		returnErr = mainErr
 	}
 	return
 }
 
-func parse_return(msg MessageImmutable, transport Transport, atEOF bool, o_data, o_rest []byte) (ret_msg MessageImmutable, data, rest []byte, main_err error) {
+func parseReturn(msg MessageImmutable, transport Transport, atEOF bool, o_data, o_rest []byte) (returnMsg MessageImmutable, data, rest []byte, mainErr error) {
 	data = o_data
 	rest = o_rest
 
 	if transport == nil {
-		ret_msg = msg
+		returnMsg = msg
 		return
 	}
 
 	if rest != nil {
-		ret_msg = msg
+		returnMsg = msg
 		return
 	}
 
-	data, rest, main_err = transport.SuffixStrip(data[msg.text:], atEOF)
-	//log.Printf("RET\t{%q} {%q} %v\n", data, rest, main_err)
-	if data == nil && rest == nil && main_err == nil {
+	data, rest, mainErr = transport.SuffixStrip(data[msg.text:], atEOF)
+	//log.Printf("RET\t{%q} {%q} %v\n", data, rest, mainErr)
+	if data == nil && rest == nil && mainErr == nil {
 		return
 	}
 
@@ -268,6 +269,6 @@ func parse_return(msg MessageImmutable, transport Transport, atEOF bool, o_data,
 
 	}
 
-	ret_msg = msg
+	returnMsg = msg
 	return
 }
