@@ -6,6 +6,6 @@ import (
 	"net"
 )
 
-func (c *local_conn) osGuessConnnector() (*net.UnixConn, error) {
+func (c *localConn) osGuessConnnector() (*net.UnixConn, error) {
 	return nil, ErrorNoConnecion
 }

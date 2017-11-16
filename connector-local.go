@@ -5,7 +5,7 @@ import (
 )
 
 type (
-	local_conn struct {
+	localConn struct {
 		network, address string
 	}
 
@@ -15,12 +15,13 @@ type (
 	}
 )
 
-// dialer that forward to a local RFC5424 syslog receiver
+// LocalConnector is a dialer that forward to a local RFC5424 syslog receiver
 func LocalConnector(network, address string) Connector {
-	return &local_conn{network, address}
+	return &localConn{network, address}
 }
 
-func (c *local_conn) Connect() (WriteCloser, error) {
+// Connect is part of implementation of (Connector interface)[#Connector]
+func (c *localConn) Connect() (WriteCloser, error) {
 	if c.address != "" && c.network != "" {
 		return c.localWriteCloser(net.DialUnix(c.network, nil, &net.UnixAddr{Name: c.address, Net: c.network}))
 	}
@@ -28,7 +29,7 @@ func (c *local_conn) Connect() (WriteCloser, error) {
 	return c.localWriteCloser(c.osGuessConnnector())
 }
 
-func (c *local_conn) localWriteCloser(conn *net.UnixConn, err error) (WriteCloser, error) {
+func (c *localConn) localWriteCloser(conn *net.UnixConn, err error) (WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}

@@ -1,14 +1,15 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"github.com/nathanaelle/syslog5424/sdata"
 	"io"
 	"log"
 	"time"
+
+	"github.com/nathanaelle/syslog5424/sdata"
 )
 
 var (
-	// define the Now() function. only usefull in case of test or debug
+	// Now permit to change the local default alias function for time.Now(). only usefull in case of test or debug
 	Now func() time.Time = time.Now
 )
 

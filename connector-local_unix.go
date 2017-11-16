@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func (c *local_conn) osGuessConnnector() (*net.UnixConn, error) {
+func (c *localConn) osGuessConnnector() (*net.UnixConn, error) {
 	logTypes := []string{"unix", "unixgram"}
 	logPaths := []string{"/var/run/syslog", "/var/run/log", "/dev/log"}
 

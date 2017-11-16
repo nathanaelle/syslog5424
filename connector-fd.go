@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-// dialer that only forward to stderr
+// StdioConnector returns a Connector that only forward to stderr: or stdout:
 func StdioConnector(addr string) Connector {
 	if addr == "" {
 		return InvalidConnector{ErrorEmptyNetworkAddress}

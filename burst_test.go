@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-const BURST_SOCKET string = "./test-burst.socket"
-const BURST_MESSAGE string = "doing some stuff"
-const BURST_PACKET string = "<27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing some stuff"
-const BURST_COUNT int = 100000
+const burstSocket string = "./test-burst.socket"
+const burstMessage string = "doing some stuff"
+const burstPacket string = "<27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing some stuff"
+const burstCount int = 100000
 
-type burst_tok struct {
+type burstTestOk struct {
 	sock      string
 	network   string
 	transport Transport
@@ -21,19 +21,18 @@ type burst_tok struct {
 
 //*
 func Test_Burst(t *testing.T) {
-	seq := []burst_tok{
+	seq := []burstTestOk{
 		{"u5425", "unix", T_RFC5425},
 		{"ulf", "unix", T_LFENDED},
 		{"uzero", "unix", T_ZEROENDED},
-		/**/
 		{"dlf", "unixgram", T_LFENDED},
 		{"dzero", "unixgram", T_ZEROENDED},
-		{"d5425", "unixgram", T_RFC5425}, //*/
+		{"d5425", "unixgram", T_RFC5425},
 	}
 
 	for _, s := range seq {
 		t.Logf("burst on [%s] [%s]", s.network, s.transport.String())
-		err := burst(BURST_SOCKET+s.sock, s.network, s.transport)
+		err := burst(burstSocket+s.sock, s.network, s.transport)
 		if err != nil {
 			t.Logf("[%s] [%s] %v", s.network, s.transport.String(), err)
 			t.Fail()
@@ -57,8 +56,8 @@ func burst(sock, n string, t Transport) (err error) {
 
 	mutex.Lock()
 	wg.Add(2)
-	go serverBurst(wg, mutex, sock, n, t, BURST_COUNT)
-	go clientBurst(wg, mutex, sock, n, t, BURST_COUNT+100)
+	go serverBurst(wg, mutex, sock, n, t, burstCount)
+	go clientBurst(wg, mutex, sock, n, t, burstCount+100)
 
 	wg.Wait()
 	mutex.Unlock()
@@ -71,30 +70,30 @@ func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn, chan_err, err := (Dialer{
+	slConn, chanErr, err := (Dialer{
 		FlushDelay: 100 * time.Millisecond,
 	}).Dial(n, sock, t)
 	if err != nil {
 		log.Fatalf("client Dial %q", err)
 	}
-	defer sl_conn.End()
+	defer slConn.End()
 
 	go func() {
-		if err := <-chan_err; err != nil {
-			log.Fatalf("client chan_err %q", err)
+		if err := <-chanErr; err != nil {
+			log.Fatalf("client chanErr %q", err)
 		}
 	}()
 
-	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "client-app")
+	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "client-app")
 	if err != nil {
 		log.Fatalf("client New %q", err)
 	}
 	syslog.TestMode()
 
-	logger_err_conf := syslog.Channel(LOG_ERR).Logger("ERR : ")
+	loggerErrorConf := syslog.Channel(LOG_ERR).Logger("ERR : ")
 
 	for i := 0; i < count; i++ {
-		logger_err_conf.Print(BURST_MESSAGE)
+		loggerErrorConf.Print(burstMessage)
 	}
 
 }
@@ -107,12 +106,12 @@ func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 		log.Fatalf("server Collect %q", err)
 	}
 
-	collect, chan_err := NewReceiver(listener, 100, t)
+	collect, chanErr := NewReceiver(listener, 100, t)
 	defer collect.End()
 
 	go func() {
-		if err := <-chan_err; err != nil {
-			log.Fatalf("client chan_err %q", err)
+		if err := <-chanErr; err != nil {
+			log.Fatalf("client chanErr %q", err)
 		}
 	}()
 
@@ -124,14 +123,14 @@ func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 		if err != nil {
 			log.Fatalf("server receive %q", err)
 		}
-		if msg.String() != BURST_PACKET {
-			log.Fatalf("server got %q expected %q", msg, BURST_PACKET)
+		if msg.String() != burstPacket {
+			log.Fatalf("server got %q expected %q", msg, burstPacket)
 		}
 	}
 }
 
 func Benchmark_Burst(b *testing.B) {
-	sock := BURST_SOCKET + "-bench"
+	sock := burstSocket + "-bench"
 	defer os.Remove(sock)
 	os.Remove(sock)
 
