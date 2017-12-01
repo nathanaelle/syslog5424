@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package sdata // import "github.com/nathanaelle/syslog5424/sdata"
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
-	"strconv"
+	//	"strconv"
 )
 
 type (
@@ -73,12 +73,9 @@ func (e *encodeState) PrefixedWrite(prefix, data []byte) {
 
 func (e *encodeState) HeaderWrite(typ string, v reflect.Value) {
 	e.WriteByte('[')
-	e.Write([]byte(typ))
 
 	if v.Type().Implements(sdpenType) {
-		e.WriteByte('@')
-		pen := strconv.FormatUint(v.Interface().(SDPEN).GetPEN(), 10)
-		e.Write([]byte(pen))
+		e.Write([]byte(v.Interface().(SDIDLight).String()))
 	}
 }
 
@@ -152,7 +149,7 @@ func marshalerEncoder(e *encodeState, v reflect.Value, prefix []byte) {
 		return
 	}
 
-	m := v.Interface().(SDMarshaler)
+	m := v.Interface().(StructuredData)
 	b, err := m.Marshal5424()
 	if err != nil {
 		e.error(&MarshalerError{v.Type(), err})

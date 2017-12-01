@@ -41,12 +41,18 @@ func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn, err := Dial("unix", TEST_SOCKET)
+	slConn, chanErr, err := Dial("unix", TEST_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "client-app")
+	go func() {
+		if err := <-chanErr; err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "client-app")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,16 +64,23 @@ func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	logger_err_conf.Print("doing anoter stuff")
 	logger_err_conf.Print("doing a last stuff")
 
-	sl_conn.End()
+	slConn.End()
 }
 
 func server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err := Collect("unix", TEST_SOCKET)
+	listener, err := UnixListener(TEST_SOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
+	collect, chanErr := NewReceiver(listener, 100, T_ZEROENDED)
+
+	go func() {
+		if err := <-chanErr; err != nil {
+			log.Fatalf("client chanErr %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()

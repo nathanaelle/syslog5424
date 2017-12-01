@@ -3,16 +3,13 @@ package syslog5424
 import (
 	"fmt"
 	"log"
-	"os"
 	"sync"
 	"time"
 )
 
-const TEST_TCP_SOCKET string = "127.0.0.1:51400"
+const testTCPSocket string = "127.0.0.1:51400"
 
 func ExampleTCPServer() {
-	defer os.Remove(TEST_SOCKET)
-
 	wg := new(sync.WaitGroup)
 	mutex := new(sync.Mutex)
 
@@ -41,12 +38,18 @@ func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn, err := Dial("tcp", TEST_TCP_SOCKET)
+	slConn, chanErr, err := Dial("tcp", testTCPSocket)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "client-app")
+	go func() {
+		if err := <-chanErr; err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "client-app")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,16 +61,24 @@ func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	logger_err_conf.Print("doing anoter stuff")
 	logger_err_conf.Print("doing a last stuff")
 
-	sl_conn.End()
+	slConn.End()
 }
 
 func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err := Collect("tcp", TEST_TCP_SOCKET)
+	listener, err := TCPListener("tcp", testTCPSocket)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	collect, chanErr := NewReceiver(listener, 100, T_LFENDED)
+
+	go func() {
+		if err := <-chanErr; err != nil {
+			log.Fatalf("client chanErr %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()

@@ -117,32 +117,37 @@ func (p *Priority) Set(d string) error {
 	return nil
 }
 
-func (p *Priority) Facility() Priority {
-	return *p & facilityMask
+func (p Priority) Facility() Priority {
+	return p & facilityMask
 }
 
-func (p *Priority) Severity() Priority {
-	return *p & severityMask
+func (p Priority) Severity() Priority {
+	return p & severityMask
 }
 
-func (p *Priority) String() string {
+func (p Priority) String() string {
 	return facility_string[p.Facility()>>3] + "." + severity_string[p.Severity()]
 }
 
-func (p *Priority) Marshal5424() []byte {
-	u := byte(int(*p) % 10)
-	d := byte(int(*p)%100 - (int(*p) % 10))
-	c := byte(int(*p) - (int(*p) % 100))
-	d /= 10
-	c /= 100
+func (p Priority) Marshal5424() (data []byte, err error) {
+	u := byte(int(p) % 10)
+	d := byte(int(p)%100 - (int(p) % 10))
+	c := byte(int(p) - (int(p) % 100))
+	c = '0' + c/100
+	d = '0' + d/10
+	u = '0' + u/1
 
-	if c > 0 {
-		return []byte{'<', c + '0', d + '0', u + '0', '>', '1'}
+	if c > '0' {
+		data = []byte{'<', c, d, u, '>', '1'}
+		return
 	}
-	if d > 0 {
-		return []byte{'<', d + '0', u + '0', '>', '1'}
+	if d > '0' {
+		data = []byte{'<', d, u, '>', '1'}
+		return
 	}
-	return []byte{'<', u + '0', '>', '1'}
+	data = []byte{'<', u, '>', '1'}
+
+	return
 }
 
 func (p *Priority) Unmarshal5424(d []byte) error {

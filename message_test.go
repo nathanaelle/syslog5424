@@ -1,6 +1,8 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
+	"github.com/nathanaelle/syslog5424/sdata"
+	tq "github.com/nathanaelle/syslog5424/sdata/timequality"
 	"math"
 	"testing"
 	"time"
@@ -13,24 +15,17 @@ type MessageTest struct {
 
 var messageTest = []MessageTest{
 	{
-		Message{Priority(0), z_epoch(), "-", "-", "-", "-", emptyListSD, ""},
+		Message{Priority(0), z_epoch(), "-", "-", "-", "-", emptyListSD(), ""},
 		"<0>1 1970-01-01T01:00:00Z - - - - -",
 	},
 	{
-		Message{Priority(0), z_epoch(), "-", "-", "-", "-", []interface{}{timeQuality{pint(1), pint(1), nil}}, ""},
+		Message{Priority(0), z_epoch(), "-", "-", "-", "-", sdata.List{tq.TimeQuality{true, true, nil}}, ""},
 		`<0>1 1970-01-01T01:00:00Z - - - - [timeQuality tzKnown="1" isSynced="1"]`,
 	},
 	{
-		Message{Priority(24), z_epoch(), "bla", "bli", "blu", "blo", emptyListSD, "message"},
+		Message{Priority(24), z_epoch(), "bla", "bli", "blu", "blo", emptyListSD(), "message"},
 		"<24>1 1970-01-01T01:00:00Z bla bli blu blo - message",
 	},
-}
-
-var parseTest = []string{
-	"<0>1 1970-01-01T01:00:00+01:00 - - - - -",
-	"<12>1 1970-01-01T01:00:00Z - - - - -",
-	"<0>1 1970-01-01T01:00:00Z bla bli blu blo - message",
-	"<234>1 1970-01-01T01:00:00+01:00 bla bli blu blo - message",
 }
 
 func z_epoch() time.Time {
@@ -44,57 +39,6 @@ func Test_Message(t *testing.T) {
 		if a != tt.a {
 			t.Errorf(" %v String() = %s; want %s", tt.m, a, tt.a)
 			continue
-		}
-	}
-
-	for _, tt := range parseTest {
-		a, err := Parse([]byte(tt))
-		if err != nil {
-			t.Errorf(" %s parse() %s", tt, err)
-		}
-
-		if a.String() != tt {
-			t.Errorf(" %s parse() %+v [%s]", tt, a, a.String())
-			continue
-		}
-	}
-}
-
-func Benchmark_Message_Parse(b *testing.B) {
-	max := int(math.Ceil(float64(b.N) / float64(len(parseTest))))
-	for i := 0; i < max; i++ {
-		for _, tt := range parseTest {
-			Parse([]byte(tt))
-		}
-	}
-}
-
-func Benchmark_Message_Chan(b *testing.B) {
-	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
-	ch := make(chan Message)
-	go func() {
-		for {
-			<-ch
-		}
-	}()
-	for i := 0; i < max; i++ {
-		for _, tt := range messageTest {
-			ch <- tt.m
-		}
-	}
-}
-
-func Benchmark_Message_ChanBuf(b *testing.B) {
-	max := int(math.Ceil(float64(b.N) / float64(len(messageTest))))
-	ch := make(chan Message, 100)
-	go func() {
-		for {
-			<-ch
-		}
-	}()
-	for i := 0; i < max; i++ {
-		for _, tt := range messageTest {
-			ch <- tt.m
 		}
 	}
 }
@@ -123,6 +67,14 @@ func Benchmark_Message_String_short(b *testing.B) {
 func Benchmark_Message_String_long(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		messageTest[2].m.String()
+	}
+}
+
+func Benchmark_Message_Marshal5424(b *testing.B) {
+	msg := Message{Priority(0), z_epoch(), "-", "-", "-", "-", sdata.List{tq.TimeQuality{true, true, nil}}, "It's time to make the do-nuts."}
+
+	for i := 0; i < b.N; i++ {
+		msg.Marshal5424()
 	}
 }
 

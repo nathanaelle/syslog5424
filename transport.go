@@ -2,208 +2,161 @@ package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
 	"bytes"
-	"errors"
 	"strconv"
 )
 
 type (
-	gen_t struct {
-		conn Conn
-	}
-
 	// Encode frame in NULL terminated frame
-	T_ZEROENDED struct {
-		gen_t
-	}
+	tZeroEnded struct{}
 
 	// Encode frame in LF terminated frame
-	T_LFENDED struct {
-		gen_t
-	}
+	tLFEnded struct{}
 
-	// Encode frame in RFC 5426 formated frame
-	// RFC 5426 Format format is :
+	// Encode frame in RFC 5425 formated frame
+	// RFC 5425 Format format is :
 	// len([]byte) ' ' []byte
-	T_RFC5426 struct {
-		gen_t
-	}
+	tRFC5425 struct{}
+
+	tGuess struct{}
 
 	Transport interface {
-		Conn
-
 		// Set the sub conn where to write the transport-encoded data
-		SetConn(Conn)
+		Encode([]byte) []byte
 
-		// see bufio.Scanner
-		Split([]byte, bool) (int, []byte, error)
+		// Decode the prefix in case of transport that use an encoding header
+		PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error)
+
+		// Decode the suffix in case of transport that use an encoding terminaison
+		SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error)
 
 		String() string
 	}
 )
 
-// see (Conn interface)[#Conn]
-func (t *gen_t) Flush() error {
-	if t.conn == nil {
-		return nil
-	}
+var (
+	// T_ZEROENDED is commonly used transport with "unix" and "unixgram"
+	T_ZEROENDED Transport = tZeroEnded{}
 
-	return t.conn.Flush()
-}
+	// T_LFENDED is commonly used transport with "tcp" "tcp4" and "tcp6"
+	T_LFENDED Transport = tLFEnded{}
 
-func (t *gen_t) SetConn(c Conn) {
-	t.conn = c
-}
+	// T_RFC5425 is performant transport specified in RFC 5425
+	T_RFC5425 Transport = tRFC5425{}
+)
 
-// see (Conn interface)[#Conn]
-func (t *gen_t) Close() error {
-	if t.conn == nil {
-		return nil
-	}
-
-	return t.conn.Close()
-}
-
-// see (Conn interface)[#Conn]
-func (t *gen_t) Redial() error {
-	if t.conn == nil {
-		return nil
-	}
-
-	return t.conn.Redial()
-}
-
-// see (Conn interface)[#Conn]
-func (t *gen_t) Read(d []byte) (int, error) {
-	if t.conn == nil {
-		return 0, errors.New("no Conn set")
-	}
-
-	return t.conn.Read(d)
-}
-
-func (t *gen_t) write_conn(data []byte) (int, error) {
-	if t.conn == nil {
-		return 0, errors.New("no Conn set")
-	}
-
-	p := 0
-	t_len := len(data)
-	for p < t_len {
-		s, err := t.conn.Write(data[p:])
-		p += s
-		if err == nil {
-			continue
-		}
-
-		// TODO do some magic
-
-	}
-
-	return t_len, nil
-}
-
-func (t *gen_t) String() string {
-	return "unknown transport"
-}
-
-func (t *T_ZEROENDED) String() string {
+func (t tZeroEnded) String() string {
 	return "zero ended transport"
 }
 
-func (t *T_LFENDED) String() string {
+func (t tLFEnded) String() string {
 	return "lf ended transport"
 }
 
-func (t *T_RFC5426) String() string {
-	return "rfc 5426 transport"
+func (t tRFC5425) String() string {
+	return "rfc 5425 transport"
 }
 
-// split function for NULL terminated message
-func (t *T_ZEROENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
+func (t tZeroEnded) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+	if buffer == nil || len(buffer) == 0 {
+		return nil, nil, nil
 	}
 
-	if i := bytes.IndexByte(data, byte(0)); i >= 0 {
-		return i + 1, data[0:i], nil
+	return buffer, nil, nil
+}
+
+func (t tLFEnded) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+	if buffer == nil || len(buffer) == 0 {
+		return nil, nil, nil
+	}
+	return buffer, nil, nil
+}
+
+func (t tRFC5425) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+	if buffer == nil || len(buffer) == 0 {
+		return nil, nil, nil
 	}
 
-	// TODO need to detect the non zero ended message here
+	if len(buffer) < 20 {
+		return nil, nil, nil
+	}
+
+	sep_pos := bytes.IndexByte(buffer, ' ')
+	if sep_pos <= 0 {
+		return nil, nil, ERR_TRANSPORT_NOHEADER
+	}
+
+	lenMsg, err := strconv.Atoi(string(buffer[0:sep_pos]))
+	if err != nil {
+		return nil, nil, ERR_TRANSPORT_INVHEADER
+	}
+
+	start := sep_pos + 1
+	lenBuff := start + lenMsg
+	if len(buffer) < lenBuff {
+		if atEOF {
+			return buffer[start:], nil, ERR_TRANSPORT_INCOMPLETE
+		}
+		return nil, nil, nil
+	}
+
+	return buffer[start:lenBuff], buffer[lenBuff:], nil
+}
+
+func (t tZeroEnded) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+	if buffer == nil || len(buffer) == 0 {
+		return nil, nil, nil
+	}
+
+	if i := bytes.IndexByte(buffer, byte(0)); i >= 0 {
+		return buffer[0:i], buffer[i+1:], nil
+	}
+
+	// at EOF act like \0 is implicit
+	if atEOF {
+		return buffer, nil, nil
+	}
+
+	return buffer, nil, nil
+}
+
+func (t tLFEnded) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+	if buffer == nil || len(buffer) == 0 {
+		return nil, nil, nil
+	}
+
+	if i := bytes.IndexByte(buffer, '\n'); i >= 0 {
+		return buffer[0:i], buffer[i+1:], nil
+	}
 
 	if atEOF {
-		return len(data), data, nil
+		return buffer, nil, ERR_TRANSPORT_INCOMPLETE
 	}
 
-	// more data.
-	return 0, nil, nil
+	return buffer, nil, nil
+}
+
+func (t tRFC5425) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err error) {
+	if buffer == nil || len(buffer) == 0 {
+		return nil, nil, nil
+	}
+	return buffer, nil, nil
 }
 
 // Write a NULL terminated message.
 // see (Conn interface)[#Conn]
-func (t *T_ZEROENDED) Write(d []byte) (int, error) {
-	return t.write_conn(append(d, byte(0)))
-}
-
-// split function for LF terminated message
-func (t *T_LFENDED) Split(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		return i + 1, data[0:i], nil
-	}
-
-	if atEOF {
-		//return len(data), data, nil
-		return 0, nil, errors.New("T_LFENDED Split: incomplete message")
-	}
-
-	// more data.
-	return 0, nil, nil
+func (t tZeroEnded) Encode(d []byte) []byte {
+	return append(d, byte(0))
 }
 
 // Write a LF terminated message
 // see (Conn interface)[#Conn]
-func (t *T_LFENDED) Write(d []byte) (int, error) {
-	return t.write_conn(append(d, '\n'))
+func (t tLFEnded) Encode(d []byte) []byte {
+	return append(d, '\n')
 }
 
-// split function for RFC 5426 message
-func (t *T_RFC5426) Split(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-
-	if len(data) < 20 {
-		return 0, nil, nil
-	}
-
-	sep_pos := bytes.IndexByte(data, ' ')
-	if sep_pos <= 0 {
-		return 0, nil, errors.New("T_RFC5426 Split: no header len")
-	}
-
-	msg_len, err := strconv.Atoi(string(data[0:sep_pos]))
-	if err != nil {
-		return 0, nil, errors.New("T_RFC5426 Split: invalid header len")
-	}
-
-	start := sep_pos + 1
-	buf_len := start + msg_len
-	if len(data) < buf_len {
-		if atEOF {
-			return 0, nil, errors.New("T_RFC5426 Split: incomplete message")
-		}
-		return 0, nil, nil
-	}
-
-	return buf_len, data[start:buf_len], nil
-}
-
-// Write a RFC 5426 formated message
+// Write a RFC 5425 formated message
 // see (Conn interface)[#Conn]
-func (t *T_RFC5426) Write(d []byte) (int, error) {
+func (t tRFC5425) Encode(d []byte) []byte {
 	l := len(d)
 	h := []byte(strconv.Itoa(l))
 	ret := make([]byte, l+len(h)+1)
@@ -211,5 +164,5 @@ func (t *T_RFC5426) Write(d []byte) (int, error) {
 	ret[len(h)] = ' '
 	copy(ret[len(h)+1:], d[:])
 
-	return t.write_conn(ret)
+	return ret
 }

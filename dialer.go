@@ -7,9 +7,6 @@ import (
 
 type (
 	Dialer struct {
-		// length of the queue to the log_sender goroutine
-		QueueLen int
-
 		// delay to flush the queue
 		FlushDelay time.Duration
 	}
@@ -18,11 +15,9 @@ type (
 // Dial opens a connection to the syslog daemon
 // network can be "stdio", "unix", "unixgram", "tcp", "tcp4", "tcp6"
 // used Transport is the "common" transport for the network.
-// QueueLen is preset to 100 Message
 // FlushDelay is preset to 500ms
-func Dial(network, address string) (*Sender, error) {
+func Dial(network, address string) (*Sender, <-chan error, error) {
 	return (Dialer{
-		QueueLen:   100,
 		FlushDelay: 500 * time.Millisecond,
 	}).Dial(network, address, nil)
 }
@@ -31,51 +26,11 @@ func Dial(network, address string) (*Sender, error) {
 // network can be "stdio", "unix", "unixgram", "tcp", "tcp4", "tcp6"
 // Transport can be nil.
 // if Transport is nil the "common" transport for the wished network is used.
-func (d Dialer) Dial(network, address string, t Transport) (*Sender, error) {
-	var pipeline chan Message
+//
+// the returned `<-chan error` is used to collect errors than may occur in goroutine
+func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan error, error) {
 	var ticker <-chan time.Time
-	var c Conn
-
-	switch network {
-	case "stdio":
-		if t == nil {
-			t = new(T_LFENDED)
-		}
-		c = stdio_dial(address)
-
-	case "local":
-		if t == nil {
-			t = new(T_ZEROENDED)
-		}
-		c = local_dial("", address)
-
-	case "unix", "unixgram":
-		if t == nil {
-			t = new(T_ZEROENDED)
-		}
-		c = local_dial(network, address)
-
-	case "tcp", "tcp6", "tcp4":
-		if t == nil {
-			t = new(T_LFENDED)
-		}
-		c = tcp_dial(network, address)
-
-	default:
-		return nil, errors.New("unknown network for Dial : " + network)
-	}
-
-	if c == nil {
-		return nil, errors.New("No Connection established")
-	}
-
-	switch d.QueueLen <= 0 {
-	case true:
-		pipeline = make(chan Message)
-
-	case false:
-		pipeline = make(chan Message, d.QueueLen)
-	}
+	var c Connector
 
 	switch {
 	case d.FlushDelay <= time.Millisecond:
@@ -86,7 +41,39 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender, error) {
 		ticker = time.Tick(d.FlushDelay)
 	}
 
-	t.SetConn(c)
+	switch network {
+	case "stdio":
+		if t == nil {
+			t = T_LFENDED
+		}
+		c = StdioConnector(address)
 
-	return NewSender(t, pipeline, ticker), nil
+	case "local":
+		if t == nil {
+			t = T_ZEROENDED
+		}
+		c = LocalConnector("", address)
+
+	case "unix", "unixgram":
+		if t == nil {
+			t = T_ZEROENDED
+		}
+		c = LocalConnector(network, address)
+
+	case "tcp", "tcp6", "tcp4":
+		if t == nil {
+			t = T_LFENDED
+		}
+		c = TCPConnector(network, address)
+
+	default:
+		return nil, nil, errors.New("unknown network for Dial : " + network)
+	}
+
+	if c == nil {
+		return nil, nil, ErrorNoConnecion
+	}
+
+	sndr, chanErr := NewSender(c, t, ticker)
+	return sndr, chanErr, nil
 }

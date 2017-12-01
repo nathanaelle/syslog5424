@@ -41,15 +41,20 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	sl_conn, err := (Dialer{
-		QueueLen:   100,
+	slConn, chan_err, err := (Dialer{
 		FlushDelay: 100 * time.Millisecond,
-	}).Dial("unix", TEST_SOCKET2, new(T_RFC5426))
+	}).Dial("unix", TEST_SOCKET2, T_RFC5425)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	syslog, err := New(sl_conn, LOG_DAEMON|LOG_WARNING, "custom-app")
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "custom-app")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,18 +66,24 @@ func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	logger_err_conf.Print("doing anoter stuff")
 	logger_err_conf.Print("doing a last stuff")
 
-	sl_conn.End()
+	slConn.End()
 }
 
 func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	collect, err := (Collector{
-		QueueLen: 100,
-	}).Collect("unix", TEST_SOCKET2, new(T_RFC5426))
+	listener, err := UnixListener(TEST_SOCKET2)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("server Collect %q", err)
 	}
+
+	collect, chan_err := NewReceiver(listener, 100, T_RFC5425)
+
+	go func() {
+		if err := <-chan_err; err != nil {
+			log.Fatalf("client chan_err %q", err)
+		}
+	}()
 
 	// socket is created
 	mutex.Unlock()

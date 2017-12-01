@@ -4,10 +4,12 @@ import (
 	"io"
 	"log"
 	"time"
+
+	"github.com/nathanaelle/syslog5424/sdata"
 )
 
 var (
-	// define the Now() function. only usefull in case of test or debug
+	// Now permit to change the local default alias function for time.Now(). only usefull in case of test or debug
 	Now func() time.Time = time.Now
 )
 
@@ -21,7 +23,7 @@ type (
 		AppName(string) Channel
 		Msgid(string) Channel
 		Logger(string) *log.Logger
-		Log(string, ...interface{})
+		Log(string, ...sdata.StructuredData)
 	}
 
 	// /dev/null Channel
@@ -76,16 +78,16 @@ func (d *trueChannel) Msgid(msgid string) Channel {
 	}
 }
 
-func (d *msgChannel) Logger(prefix string) *log.Logger {
-	switch d.priority.Severity() {
+func (c *msgChannel) Logger(prefix string) *log.Logger {
+	switch c.priority.Severity() {
 	case LOG_DEBUG:
-		return log.New(d, prefix, log.Lshortfile)
+		return log.New(c, prefix, log.Lshortfile)
 	default:
-		return log.New(d, prefix, 0)
+		return log.New(c, prefix, 0)
 	}
 }
 
-func (d *msgChannel) IsDevNull() bool {
+func (c *msgChannel) IsDevNull() bool {
 	return false
 }
 
@@ -94,7 +96,7 @@ func (c *msgChannel) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
-func (c *msgChannel) Log(d string, sd ...interface{}) {
+func (c *msgChannel) Log(d string, sd ...sdata.StructuredData) {
 	msg := forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d))
 
 	if len(sd) > 0 {
@@ -106,8 +108,8 @@ func (c *msgChannel) Log(d string, sd ...interface{}) {
 
 //	/dev/null Logger
 // Nothing is logged
-func (d *devnull) Logger(prefix string) *log.Logger {
-	return log.New(d, prefix, 0)
+func (dn *devnull) Logger(prefix string) *log.Logger {
+	return log.New(dn, prefix, 0)
 }
 
 func (dn *devnull) IsDevNull() bool {
@@ -126,5 +128,5 @@ func (dn *devnull) Write(d []byte) (int, error) {
 	return len(d), nil
 }
 
-func (dn *devnull) Log(_ string, _ ...interface{}) {
+func (dn *devnull) Log(_ string, _ ...sdata.StructuredData) {
 }

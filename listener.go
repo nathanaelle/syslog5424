@@ -1,87 +1,63 @@
 package syslog5424 // import "github.com/nathanaelle/syslog5424"
 
 import (
-	"bufio"
-	"errors"
 	"io"
 	"net"
+	//	"log"
 )
 
 type (
 	Listener interface {
-		net.Listener
+		// set a deadline for Accept()
+		// SetDeadline(t time.Time) error
+
+		// Accept waits for and returns the next DataReader to the listener.
+		Accept() (DataReader, error)
+
+		// Close closes the listener.
+		Close() error
 	}
 
-	Collector struct {
-		// length of the queue to the receiver queue
-		QueueLen int
+	DataReader interface {
+		io.Reader
+		io.Closer
 
-		scan     *bufio.Scanner
-		pipeline chan []byte
+		// RemoteAddr returns the remote network address.
+		RemoteAddr() net.Addr
 	}
 
 	Receiver struct {
 		listener  Listener
 		transport Transport
-		pipeline  chan []byte
+		pipeline  chan messageErrorPair
 		end       chan struct{}
+	}
+
+	messageErrorPair struct {
+		m MessageImmutable
+		e error
 	}
 )
 
-func Collect(network, address string) (*Receiver, error) {
-	return (Collector{
-		QueueLen: 100,
-	}).Collect(network, address, nil)
-}
+const readBuffer = 1 << 18
 
-func (d Collector) Collect(network, address string, t Transport) (*Receiver, error) {
-	var pipeline chan []byte
-	var c Listener
-	var err error
+// if Transport is nil then the function returns nil, nil
+// this case may occurs when transport is unknown at compile time
+//
+// the returned `<-chan error` is used to collect errors than may occur in goroutine
+func NewReceiver(listener Listener, lenQueue int, t Transport) (*Receiver, <-chan error) {
+	var pipeline chan messageErrorPair
 
-	switch network {
-	case "unix":
-		if t == nil {
-			t = new(T_ZEROENDED)
-		}
-		c, err = unix_coll(network, address)
-
-	case "unixgram":
-		if t == nil {
-			t = new(T_ZEROENDED)
-		}
-		c, err = unixgram_coll(network, address)
-
-	case "tcp", "tcp6", "tcp4":
-		if t == nil {
-			t = new(T_LFENDED)
-		}
-		c, err = tcp_coll(network, address)
-
-	default:
-		return nil, errors.New("unknown network for Collector : " + network)
+	if t == nil {
+		return nil, nil
 	}
 
-	if err != nil {
-		return nil, err
+	if lenQueue <= 0 {
+		pipeline = make(chan messageErrorPair)
+	} else {
+		pipeline = make(chan messageErrorPair, lenQueue)
 	}
 
-	if c == nil {
-		return nil, errors.New("No Connection established")
-	}
-
-	switch d.QueueLen <= 0 {
-	case true:
-		pipeline = make(chan []byte)
-
-	case false:
-		pipeline = make(chan []byte, d.QueueLen)
-	}
-
-	return NewReceiver(c, pipeline, t), nil
-}
-
-func NewReceiver(listener Listener, pipeline chan []byte, t Transport) *Receiver {
 	r := &Receiver{
 		listener:  listener,
 		pipeline:  pipeline,
@@ -89,12 +65,14 @@ func NewReceiver(listener Listener, pipeline chan []byte, t Transport) *Receiver
 		end:       make(chan struct{}),
 	}
 
-	go r.run_queue()
+	chanErr := make(chan error, 10)
 
-	return r
+	go r.runQueue(chanErr)
+
+	return r, chanErr
 }
 
-func (r *Receiver) run_queue() {
+func (r *Receiver) runQueue(chanErr chan<- error) {
 	defer r.listener.Close()
 	defer close(r.pipeline)
 
@@ -106,36 +84,82 @@ func (r *Receiver) run_queue() {
 		default:
 			conn, err := r.listener.Accept()
 			if err != nil {
-				panic(err)
+				chanErr <- err
 			}
 
-			go r.tokenize(conn)
+			go r.tokenize(conn, chanErr)
 		}
 	}
 
 }
 
-func (r *Receiver) tokenize(conn io.ReadCloser) {
-	scan := bufio.NewScanner(conn)
-	scan.Split(r.transport.Split)
+func (r *Receiver) tokenize(conn io.ReadCloser, chanErr chan<- error) {
+	defer conn.Close()
 
-	for scan.Scan() {
-		r.pipeline <- []byte(scan.Text())
+	var eof bool
+
+	done := 0
+	count := 0
+	total := 0
+	buffer := make([]byte, readBuffer)
+	for {
+		lenRead, err := conn.Read(buffer[done:])
+		total += lenRead
+		if err == io.EOF {
+			eof = true
+			err = nil
+		}
+		//log.Printf("EOF\t%v %v %v %v", count, total, lenRead, err)
+
+		if err != nil {
+			chanErr <- err
+		}
+		if lenRead == 0 && eof {
+			return
+		}
+		if lenRead == 0 {
+			continue
+		}
+
+		lenRead += done
+		data := buffer[0:lenRead]
+		for {
+			msg, rest, parseErr := Parse(data, r.transport, eof)
+
+			if rest == nil {
+				//log.Printf("NIL\t{%q} {%q} %v %v %v", msg, data[0:10], len(rest), rest == nil, parseErr)
+				//log.Printf("NIL\t%v %v %v %v", count, total, lenRead, parseErr)
+				break
+			}
+			data = rest
+
+			count++
+			r.pipeline <- messageErrorPair{msg, parseErr}
+			if len(rest) == 0 {
+				break
+			}
+		}
+
+		done = len(data)
+		buffer = buffer[lenRead-done:]
+
+		if len(buffer) < 500 {
+			old := buffer
+			buffer = make([]byte, readBuffer)
+			copy(buffer[0:len(old)], old)
+		}
+
+		if eof == true {
+			return
+		}
 	}
-
-	conn.Close()
 }
 
-func (r *Receiver) ReceiveRaw() ([]byte, bool) {
-	b, end := <-r.pipeline
-	return b, end
-}
+// Read an incoming syslog message and a possible error that occured during the decoding of this syslog message
+func (r *Receiver) Receive() (MessageImmutable, error, bool) {
+	pair, end := <-r.pipeline
 
-func (r *Receiver) Receive() (Message, error, bool) {
-	b, end := r.ReceiveRaw()
-	msg, err := Parse(b)
-
-	return msg, err, end
+	return pair.m, pair.e, end
 }
 
 // terminate the log_collector goroutine
