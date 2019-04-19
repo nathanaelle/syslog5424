@@ -19,10 +19,10 @@ func main() {
 	sl_conn, _, _ := syslog5424.Dial( "stdio", "stderr:" )
 
 	// create a syslog wrapper around the connection
-	syslog,_ := syslog5424.New( sl_conn, syslog5424.LOG_DAEMON|syslog5424.LOG_WARNING, "test-app" )
+	syslog,_ := syslog5424.New( sl_conn, syslog5424.LogDAEMON|syslog5424.LogWARNING, "test-app" )
 
 	// create a channel for errors
-	err_channel	:= syslog.Channel( syslog5424.LOG_ERR )
+	err_channel	:= syslog.Channel( syslog5424.LogERR )
 
 	// plug the golang log.Logger API to this channel
 	logger_err := err_channel.Logger( "ERR : " )

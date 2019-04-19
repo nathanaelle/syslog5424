@@ -1,5 +1,5 @@
 language: go
-go_import_path: github.com/nathanaelle/syslog5424
+go_import_path: github.com/nathanaelle/syslog5424/v2
 go:
 - tip
 - 1.12
