@@ -1,12 +1,6 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 type (
-	SDIDLight interface {
-		String() string
-		IsIANA() bool
-		GetPEN() uint64
-	}
-
 	genericSDID struct {
 		SDIDLight
 	}
@@ -17,6 +11,7 @@ type (
 	}
 )
 
+// GenericSD create a generic structured Data
 func GenericSD(i SDIDLight) StructuredData {
 	return genericSD{genericSDID{i}, i}
 }

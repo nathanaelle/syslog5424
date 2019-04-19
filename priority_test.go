@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"fmt"
@@ -10,28 +10,28 @@ type PriorityTest struct {
 	p Priority
 }
 
-func Test_Priority(t *testing.T) {
-	l_inval := []string{
+func TestPriority(t *testing.T) {
+	lInval := []string{
 		"foo.bar",
 		"kern.emerg.info",
 		"kern",
 	}
 
-	l_val := []PriorityTest{
+	lVal := []PriorityTest{
 		{"kern.emerg", Priority(0)},
 		{"user.debug", Priority(15)},
 	}
 
 	d := new(Priority)
 
-	for _, inv := range l_inval {
+	for _, inv := range lInval {
 		err := d.Set(inv)
 		if err == nil {
 			t.Errorf("[%v] parser invalid", inv)
 		}
 	}
 
-	for _, val := range l_val {
+	for _, val := range lVal {
 		d := new(Priority)
 		err := d.Set(val.a)
 		if err != nil {
@@ -44,7 +44,7 @@ func Test_Priority(t *testing.T) {
 	}
 }
 
-func Test_Priority_Marshal5424(t *testing.T) {
+func TestPriorityMarshal5424(t *testing.T) {
 	i := int(0)
 
 	for i < 256 {
@@ -67,23 +67,23 @@ func Test_Priority_Marshal5424(t *testing.T) {
 
 go test -cpu 4 -benchtime=10s -bench=Priority_ -benchmem
 goarch: amd64
-Benchmark_Priority_Set-4             	200000000	        66.4 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Priority_String-4          	300000000	        39.2 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Priority_Marshal5424-4     	500000000	        30.3 ns/op	       5 B/op	       1 allocs/op
-Benchmark_Priority_Unmarshal5424-4   	2000000000	         9.86 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrioritySet-4             	200000000	        66.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPriorityString-4          	300000000	        39.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPriorityMarshal5424-4     	500000000	        30.3 ns/op	       5 B/op	       1 allocs/op
+BenchmarkPriorityUnmarshal5424-4   	2000000000	         9.86 ns/op	       0 B/op	       0 allocs/op
 PASS
 
 go test -cpu 1 -benchtime=10s -bench=Priority_ -benchmem
 goarch: amd64
-Benchmark_Priority_Set           	200000000	        67.7 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Priority_String        	500000000	        33.2 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Priority_Marshal5424   	500000000	        27.3 ns/op	       5 B/op	       1 allocs/op
-Benchmark_Priority_Unmarshal5424 	2000000000	         8.47 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPrioritySet           		200000000	        67.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPriorityString        		500000000	        33.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkPriorityMarshal5424   		500000000	        27.3 ns/op	       5 B/op	       1 allocs/op
+BenchmarkPriorityUnmarshal5424 		2000000000	         8.47 ns/op	       0 B/op	       0 allocs/op
 PASS
 
 */
 
-func Benchmark_Priority_Set(b *testing.B) {
+func BenchmarkPrioritySet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		p := Priority(0)
 		if err := (&p).Set("cron.warning"); err != nil {
@@ -92,7 +92,7 @@ func Benchmark_Priority_Set(b *testing.B) {
 	}
 }
 
-func Benchmark_Priority_String(b *testing.B) {
+func BenchmarkPriorityString(b *testing.B) {
 	p := Priority(15)
 	for i := 0; i < b.N; i++ {
 		if s := p.String(); s != "user.debug" {
@@ -101,7 +101,7 @@ func Benchmark_Priority_String(b *testing.B) {
 	}
 }
 
-func Benchmark_Priority_Marshal5424(b *testing.B) {
+func BenchmarkPriorityMarshal5424(b *testing.B) {
 	p := Priority(15)
 	for i := 0; i < b.N; i++ {
 		if b, err := p.Marshal5424(); err != nil || string(b) != "<15>1" {
@@ -110,7 +110,7 @@ func Benchmark_Priority_Marshal5424(b *testing.B) {
 	}
 }
 
-func Benchmark_Priority_Unmarshal5424(b *testing.B) {
+func BenchmarkPriorityUnmarshal5424(b *testing.B) {
 	data := []byte("<15>1")
 	for i := 0; i < b.N; i++ {
 		p := Priority(0)

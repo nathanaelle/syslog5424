@@ -20,14 +20,15 @@ type burstTestOk struct {
 }
 
 //*
-func Test_Burst(t *testing.T) {
+func TestBurst(t *testing.T) {
+
 	seq := []burstTestOk{
-		{"u5425", "unix", T_RFC5425},
-		{"ulf", "unix", T_LFENDED},
-		{"uzero", "unix", T_ZEROENDED},
-		{"dlf", "unixgram", T_LFENDED},
-		{"dzero", "unixgram", T_ZEROENDED},
-		{"d5425", "unixgram", T_RFC5425},
+		{"u5425", "unix", TransportRFC5425},
+		{"ulf", "unix", TransportLFEnded},
+		{"uzero", "unix", TransportZeroEnded},
+		{"dlf", "unixgram", TransportLFEnded},
+		{"dzero", "unixgram", TransportZeroEnded},
+		{"d5425", "unixgram", TransportRFC5425},
 	}
 
 	for _, s := range seq {
@@ -41,6 +42,7 @@ func Test_Burst(t *testing.T) {
 }
 
 //*/
+
 func burst(sock, n string, t Transport) (err error) {
 	defer os.Remove(sock)
 	os.Remove(sock)
@@ -84,13 +86,13 @@ func clientBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 		}
 	}()
 
-	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "client-app")
+	syslog, err := New(slConn, LogDAEMON|LogWARNING, "client-app")
 	if err != nil {
 		log.Fatalf("client New %q", err)
 	}
 	syslog.TestMode()
 
-	loggerErrorConf := syslog.Channel(LOG_ERR).Logger("ERR : ")
+	loggerErrorConf := syslog.Channel(LogERR).Logger("ERR : ")
 
 	for i := 0; i < count; i++ {
 		loggerErrorConf.Print(burstMessage)
@@ -129,7 +131,7 @@ func serverBurst(wg *sync.WaitGroup, mutex *sync.Mutex, sock, n string, t Transp
 	}
 }
 
-func Benchmark_Burst(b *testing.B) {
+func BenchmarkBurst(b *testing.B) {
 	sock := burstSocket + "-bench"
 	defer os.Remove(sock)
 	os.Remove(sock)
@@ -144,14 +146,13 @@ func Benchmark_Burst(b *testing.B) {
 
 	mutex.Lock()
 	wg.Add(2)
-	go clientBurst(wg, mutex, sock, "unix", T_RFC5425, b.N+100)
+	go clientBurst(wg, mutex, sock, "unix", TransportRFC5425, b.N+100)
 
 	b.ResetTimer()
-	serverBurst(wg, mutex, sock, "unix", T_RFC5425, b.N)
+	serverBurst(wg, mutex, sock, "unix", TransportRFC5425, b.N)
 
 	wg.Wait()
 	mutex.Unlock()
 
 	return
-
 }

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func ExampleSyslogClient() {
+func ExampleDial_stdio() {
 	Now = func() time.Time {
 		t, _ := time.ParseInLocation("2006-01-02T15:04:00Z", "2014-12-20T14:04:00Z", time.UTC)
 		return t
@@ -16,7 +16,7 @@ func ExampleSyslogClient() {
 		log.Fatal(err)
 	}
 
-	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "test-app")
+	syslog, err := New(slConn, LogDAEMON|LogWARNING, "test-app")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,16 +25,16 @@ func ExampleSyslogClient() {
 	conflog := syslog.SubSyslog("configuration")
 
 	// using standard "log" API from golang
-	logger_info_conf := conflog.Channel(LOG_INFO).Logger("INFO : ")
-	logger_err_conf := conflog.Channel(LOG_ERR).Logger("ERR : ")
+	loggerInfoConf := conflog.Channel(LogINFO).Logger("INFO : ")
+	loggerErrConf := conflog.Channel(LogERR).Logger("ERR : ")
 
-	// this is not logged because line 25 tell to syslog to log LOG_WARNING or higher
-	logger_info_conf.Print("doing some stuff but not logged")
+	// this is not logged because line 25 tell to syslog to log LogWARNING or higher
+	loggerInfoConf.Print("doing some stuff but not logged")
 
-	logger_err_conf.Print("doing some stuff")
+	loggerErrConf.Print("doing some stuff")
 
 	// using internal API
-	conflog.Channel(LOG_ERR).Log("another message with structured data", GenericSD(someSD{"some message", 42}))
+	conflog.Channel(LogERR).Log("another message with structured data", GenericSD(someSD{"some message", 42}))
 
 	// closing the connection and flushing all remaining logs
 	slConn.End()

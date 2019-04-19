@@ -9,7 +9,7 @@ import (
 
 const testTCPSocket string = "127.0.0.1:51400"
 
-func ExampleTCPServer() {
+func ExampleTCPListener() {
 	wg := new(sync.WaitGroup)
 	mutex := new(sync.Mutex)
 
@@ -21,8 +21,8 @@ func ExampleTCPServer() {
 	}
 
 	wg.Add(2)
-	go ex_tcp_server(wg, mutex)
-	go ex_tcp_client(wg, mutex)
+	go exTCPServer(wg, mutex)
+	go exTCPClient(wg, mutex)
 
 	wg.Wait()
 	mutex.Unlock()
@@ -33,7 +33,7 @@ func ExampleTCPServer() {
 	// <27>1 2014-12-20T14:04:00Z localhost client-app 1234 - - ERR : doing a last stuff
 }
 
-func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
+func exTCPClient(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
 	// waiting the creation of the socket
@@ -49,22 +49,22 @@ func ex_tcp_client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 		}
 	}()
 
-	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "client-app")
+	syslog, err := New(slConn, LogDAEMON|LogWARNING, "client-app")
 	if err != nil {
 		log.Fatal(err)
 	}
 	syslog.TestMode()
 
-	logger_err_conf := syslog.Channel(LOG_ERR).Logger("ERR : ")
+	loggerErrConf := syslog.Channel(LogERR).Logger("ERR : ")
 
-	logger_err_conf.Print("doing some stuff")
-	logger_err_conf.Print("doing anoter stuff")
-	logger_err_conf.Print("doing a last stuff")
+	loggerErrConf.Print("doing some stuff")
+	loggerErrConf.Print("doing anoter stuff")
+	loggerErrConf.Print("doing a last stuff")
 
 	slConn.End()
 }
 
-func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex) {
+func exTCPServer(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
 	listener, err := TCPListener("tcp", testTCPSocket)
@@ -72,7 +72,7 @@ func ex_tcp_server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 		log.Fatal(err)
 	}
 
-	collect, chanErr := NewReceiver(listener, 100, T_LFENDED)
+	collect, chanErr := NewReceiver(listener, 100, TransportLFEnded)
 
 	go func() {
 		if err := <-chanErr; err != nil {

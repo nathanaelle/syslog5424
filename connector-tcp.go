@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"context"
@@ -17,14 +17,14 @@ var resolver = &net.Resolver{
 	PreferGo: true,
 }
 
-// dialer that forward to a local RFC5424 syslog receiver
+// TCPConnector is a dialer that forward to a local RFC5424 syslog receiver
 func TCPConnector(network, address string) Connector {
 	if network == "" || address == "" {
-		return InvalidConnector{ErrorEmptyNetworkAddress}
+		return InvalidConnector{ErrEmptyNetworkAddress}
 	}
 
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
-		return InvalidConnector{ErrorInvalidNetwork}
+		return InvalidConnector{ErrInvalidNetwork}
 
 	}
 
@@ -72,7 +72,7 @@ func (c *tcpConn) Connect() (conn WriteCloser, err error) {
 
 	var contcp *net.TCPConn
 	for _, ip := range ips {
-		addr := &net.TCPAddr{ip.IP, port, ip.Zone}
+		addr := &net.TCPAddr{IP: ip.IP, Port: port, Zone: ip.Zone}
 		contcp, err = net.DialTCP(c.network, nil, addr)
 		if err == nil {
 			break

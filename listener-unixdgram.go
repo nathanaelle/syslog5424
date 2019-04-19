@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"errors"
@@ -21,13 +21,19 @@ type (
 	}
 )
 
+// UnixgramListener create a Listener for UNIX datagram
 func UnixgramListener(address string) (Listener, error) {
 	var err error
 
 	r := new(unixgramReceiver)
 	r.end = make(chan struct{})
 
-	r.listener, err = net.ListenUnixgram("unixgram", &net.UnixAddr{address, "unixgram"})
+	uAddr, err := net.ResolveUnixAddr("unixgram", address)
+	if err != nil {
+		return nil, err
+	}
+
+	r.listener, err = net.ListenUnixgram("unixgram", uAddr)
 	for err != nil {
 		switch err.(type) {
 		case *net.OpError:
@@ -44,7 +50,7 @@ func UnixgramListener(address string) (Listener, error) {
 		}
 		os.Remove(address)
 
-		r.listener, err = net.ListenUnixgram("unixgram", &net.UnixAddr{address, "unixgram"})
+		r.listener, err = net.ListenUnixgram("unixgram", uAddr)
 	}
 
 	r.listener.SetWriteBuffer(0)

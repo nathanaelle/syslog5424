@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-const TEST_SOCKET string = "./test.socket"
+const TestSOCKET string = "./test.socket"
 
-func ExampleSyslogServer() {
-	defer os.Remove(TEST_SOCKET)
+func ExampleListener_basic() {
+	defer os.Remove(TestSOCKET)
 
 	wg := new(sync.WaitGroup)
 	mutex := new(sync.Mutex)
@@ -41,7 +41,7 @@ func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	slConn, chanErr, err := Dial("unix", TEST_SOCKET)
+	slConn, chanErr, err := Dial("unix", TestSOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,17 +52,17 @@ func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 		}
 	}()
 
-	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "client-app")
+	syslog, err := New(slConn, LogDAEMON|LogWARNING, "client-app")
 	if err != nil {
 		log.Fatal(err)
 	}
 	syslog.TestMode()
 
-	logger_err_conf := syslog.Channel(LOG_ERR).Logger("ERR : ")
+	loggerErrConf := syslog.Channel(LogERR).Logger("ERR : ")
 
-	logger_err_conf.Print("doing some stuff")
-	logger_err_conf.Print("doing anoter stuff")
-	logger_err_conf.Print("doing a last stuff")
+	loggerErrConf.Print("doing some stuff")
+	loggerErrConf.Print("doing anoter stuff")
+	loggerErrConf.Print("doing a last stuff")
 
 	slConn.End()
 }
@@ -70,11 +70,11 @@ func client(wg *sync.WaitGroup, mutex *sync.Mutex) {
 func server(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	listener, err := UnixListener(TEST_SOCKET)
+	listener, err := UnixListener(TestSOCKET)
 	if err != nil {
 		log.Fatal(err)
 	}
-	collect, chanErr := NewReceiver(listener, 100, T_ZEROENDED)
+	collect, chanErr := NewReceiver(listener, 100, TransportZeroEnded)
 
 	go func() {
 		if err := <-chanErr; err != nil {

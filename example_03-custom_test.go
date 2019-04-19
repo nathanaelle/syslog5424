@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-const TEST_SOCKET2 string = "./test-custom.socket"
+const TestSOCKET2 string = "./test-custom.socket"
 
-func ExampleSyslogServerCustom() {
-	defer os.Remove(TEST_SOCKET2)
+func ExampleListener_custom() {
+	defer os.Remove(TestSOCKET2)
 
 	wg := new(sync.WaitGroup)
 	mutex := new(sync.Mutex)
@@ -24,8 +24,8 @@ func ExampleSyslogServerCustom() {
 	}
 
 	wg.Add(2)
-	go server_custom(wg, mutex)
-	go client_custom(wg, mutex)
+	go serverCustom(wg, mutex)
+	go clientCustom(wg, mutex)
 
 	wg.Wait()
 	mutex.Unlock()
@@ -36,52 +36,52 @@ func ExampleSyslogServerCustom() {
 	// <27>1 2014-12-20T14:04:00Z localhost custom-app 1234 - - ERR : doing a last stuff
 }
 
-func client_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
+func clientCustom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
 	// waiting the creation of the socket
 	mutex.Lock()
-	slConn, chan_err, err := (Dialer{
+	slConn, chanErr, err := (Dialer{
 		FlushDelay: 100 * time.Millisecond,
-	}).Dial("unix", TEST_SOCKET2, T_RFC5425)
+	}).Dial("unix", TestSOCKET2, TransportRFC5425)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go func() {
-		if err := <-chan_err; err != nil {
+		if err := <-chanErr; err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	syslog, err := New(slConn, LOG_DAEMON|LOG_WARNING, "custom-app")
+	syslog, err := New(slConn, LogDAEMON|LogWARNING, "custom-app")
 	if err != nil {
 		log.Fatal(err)
 	}
 	syslog.TestMode()
 
-	logger_err_conf := syslog.Channel(LOG_ERR).Logger("ERR : ")
+	loggerErrConf := syslog.Channel(LogERR).Logger("ERR : ")
 
-	logger_err_conf.Print("doing some stuff")
-	logger_err_conf.Print("doing anoter stuff")
-	logger_err_conf.Print("doing a last stuff")
+	loggerErrConf.Print("doing some stuff")
+	loggerErrConf.Print("doing anoter stuff")
+	loggerErrConf.Print("doing a last stuff")
 
 	slConn.End()
 }
 
-func server_custom(wg *sync.WaitGroup, mutex *sync.Mutex) {
+func serverCustom(wg *sync.WaitGroup, mutex *sync.Mutex) {
 	defer wg.Done()
 
-	listener, err := UnixListener(TEST_SOCKET2)
+	listener, err := UnixListener(TestSOCKET2)
 	if err != nil {
 		log.Fatalf("server Collect %q", err)
 	}
 
-	collect, chan_err := NewReceiver(listener, 100, T_RFC5425)
+	collect, chanErr := NewReceiver(listener, 100, TransportRFC5425)
 
 	go func() {
-		if err := <-chan_err; err != nil {
-			log.Fatalf("client chan_err %q", err)
+		if err := <-chanErr; err != nil {
+			log.Fatalf("client chanErr %q", err)
 		}
 	}()
 

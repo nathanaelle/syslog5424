@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"net"
@@ -6,17 +6,23 @@ import (
 )
 
 type (
-	unix_receiver struct {
+	unixReceiver struct {
 		listener *net.UnixListener
 	}
 )
 
+// UnixListener create a UNIX Listener
 // careful : a previous unused socket may be removed and recreated
 func UnixListener(address string) (Listener, error) {
 	var err error
 
-	r := new(unix_receiver)
-	r.listener, err = net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
+	r := new(unixReceiver)
+	uAddr, err := net.ResolveUnixAddr("unix", address)
+	if err != nil {
+		return nil, err
+	}
+
+	r.listener, err = net.ListenUnix("unix", uAddr)
 
 	for err != nil {
 		switch err.(type) {
@@ -34,13 +40,13 @@ func UnixListener(address string) (Listener, error) {
 		}
 		os.Remove(address)
 
-		r.listener, err = net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
+		r.listener, err = net.ListenUnix("unix", uAddr)
 	}
 
 	return r, nil
 }
 
-func (r *unix_receiver) Accept() (DataReader, error) {
+func (r *unixReceiver) Accept() (DataReader, error) {
 	conn, err := r.listener.AcceptUnix()
 	if err != nil {
 		return nil, err
@@ -52,6 +58,6 @@ func (r *unix_receiver) Accept() (DataReader, error) {
 	return conn, nil
 }
 
-func (r *unix_receiver) Close() error {
+func (r *unixReceiver) Close() error {
 	return r.listener.Close()
 }

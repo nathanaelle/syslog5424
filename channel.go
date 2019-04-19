@@ -1,16 +1,16 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"io"
 	"log"
 	"time"
 
-	"github.com/nathanaelle/syslog5424/sdata"
+	"github.com/nathanaelle/syslog5424/v2/sdata"
 )
 
 var (
 	// Now permit to change the local default alias function for time.Now(). only usefull in case of test or debug
-	Now func() time.Time = time.Now
+	Now = time.Now
 )
 
 type (
@@ -61,7 +61,7 @@ func (d *trueChannel) AppName(sup string) Channel {
 		priority: d.priority,
 		hostname: d.hostname,
 		pid:      d.pid,
-		appname:  valid_app(appname),
+		appname:  validApp(appname),
 		msgid:    d.msgid,
 		output:   d.output,
 	}}
@@ -73,14 +73,14 @@ func (d *trueChannel) Msgid(msgid string) Channel {
 		hostname: d.hostname,
 		pid:      d.pid,
 		appname:  d.appname,
-		msgid:    valid_msgid(msgid),
+		msgid:    validMsgid(msgid),
 		output:   d.output,
 	}
 }
 
 func (c *msgChannel) Logger(prefix string) *log.Logger {
 	switch c.priority.Severity() {
-	case LOG_DEBUG:
+	case LogDEBUG:
 		return log.New(c, prefix, log.Lshortfile)
 	default:
 		return log.New(c, prefix, 0)
@@ -92,12 +92,12 @@ func (c *msgChannel) IsDevNull() bool {
 }
 
 func (c *msgChannel) Write(d []byte) (int, error) {
-	c.output.Send(forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d)))
+	c.output.Send(forgeMessage(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d)))
 	return len(d), nil
 }
 
 func (c *msgChannel) Log(d string, sd ...sdata.StructuredData) {
-	msg := forge_message(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d))
+	msg := forgeMessage(c.priority, Now(), c.hostname, c.appname, c.pid, c.msgid, string(d))
 
 	if len(sd) > 0 {
 		msg = msg.StructuredData(sd...)

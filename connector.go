@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"io"
@@ -10,13 +10,15 @@ import (
 )
 
 type (
+	// Connector describe the generic way to create a WriteCloser
 	Connector interface {
 		Connect() (WriteCloser, error)
 	}
 
+	// ConnectorFunc is an helper that convert an function to a Connector
 	ConnectorFunc func() (WriteCloser, error)
 
-	// generic interface describing a Connection
+	// WriteCloser is a generic interface describing a Connection
 	WriteCloser interface {
 		io.Writer
 		io.Closer
@@ -35,17 +37,19 @@ type (
 		queue        *net.Buffers
 	}
 
+	// Addr see net.Addr
 	Addr struct {
 		network string
 		address string
 	}
 )
 
+// Connect implements Connector.Connect
 func (f ConnectorFunc) Connect() (WriteCloser, error) {
 	return f()
 }
 
-// Create a new sender
+// NewSender create a new sender
 func NewSender(output Connector, transport Transport, ticker <-chan time.Time) (*Sender, <-chan error) {
 	s := &Sender{
 		endAsked:     make(chan struct{}),
@@ -126,7 +130,7 @@ func (c *Sender) runQueue() {
 	}
 }
 
-// send a Message to the log_sender goroutine
+// Send send a Message to the log_sender goroutine
 func (c *Sender) Send(m Message) (err error) {
 	var msg []byte
 
@@ -142,7 +146,7 @@ func (c *Sender) Send(m Message) (err error) {
 	return
 }
 
-// terminate the log_sender goroutine
+// End terminate the log_sender goroutine
 func (c *Sender) End() {
 	close(c.endAsked)
 	<-c.endCompleted
@@ -152,6 +156,7 @@ func (a *Addr) String() string {
 	return a.network + "!" + a.address
 }
 
+// Network see net.Addr
 func (a *Addr) Network() string {
 	return a.network
 }

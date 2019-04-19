@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"io"
@@ -7,6 +7,7 @@ import (
 )
 
 type (
+	// Listener decribe a generic way to Listen for an incoming connexion
 	Listener interface {
 		// set a deadline for Accept()
 		// SetDeadline(t time.Time) error
@@ -18,6 +19,7 @@ type (
 		Close() error
 	}
 
+	// DataReader describe an incoming connexion
 	DataReader interface {
 		io.Reader
 		io.Closer
@@ -26,6 +28,7 @@ type (
 		RemoteAddr() net.Addr
 	}
 
+	// Receiver describe how message are received and decoded
 	Receiver struct {
 		listener  Listener
 		transport Transport
@@ -39,8 +42,10 @@ type (
 	}
 )
 
-const readBuffer = 1 << 18
+const readBuffer = 1 << 16
 
+// NewReceiver create a new Listener
+//
 // if Transport is nil then the function returns nil, nil
 // this case may occurs when transport is unknown at compile time
 //
@@ -155,14 +160,14 @@ func (r *Receiver) tokenize(conn io.ReadCloser, chanErr chan<- error) {
 	}
 }
 
-// Read an incoming syslog message and a possible error that occured during the decoding of this syslog message
+// Receive an incoming syslog message and a possible error that occured during the decoding of this syslog message
 func (r *Receiver) Receive() (MessageImmutable, error, bool) {
 	pair, end := <-r.pipeline
 
 	return pair.m, pair.e, end
 }
 
-// terminate the log_collector goroutine
+// End terminate the log_collector goroutine
 func (r *Receiver) End() {
 	close(r.end)
 }

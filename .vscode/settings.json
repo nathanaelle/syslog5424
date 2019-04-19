@@ -1,5 +1,4 @@
 {
-	"go.gopath": "${workspaceRoot}/.GOPATH",
 	"go.testOnSave": true,
 	"go.coverOnSave": true,
 	"go.inferGopath": false,

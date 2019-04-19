@@ -1,6 +1,6 @@
 // +build darwin linux freebsd netbsd openbsd dragonfly
 
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"net"
@@ -12,18 +12,26 @@ func (c *localConn) osGuessConnnector() (*net.UnixConn, error) {
 
 	if c.address != "" {
 		for _, network := range logTypes {
-			conn, err := net.DialUnix(network, nil, &net.UnixAddr{c.address, network})
+			uAddr, err := net.ResolveUnixAddr(network, c.address)
+			if err != nil {
+				continue
+			}
+			conn, err := net.DialUnix(network, nil, uAddr)
 			if err == nil {
 				c.network = network
 				return conn, nil
 			}
 		}
-		return nil, ErrorNoConnecion
+		return nil, ErrNoConnecion
 	}
 
 	for _, network := range logTypes {
 		for _, path := range logPaths {
-			conn, err := net.DialUnix(network, nil, &net.UnixAddr{path, network})
+			uAddr, err := net.ResolveUnixAddr(network, path)
+			if err != nil {
+				continue
+			}
+			conn, err := net.DialUnix(network, nil, uAddr)
 			if err == nil {
 				c.network = network
 				c.address = path
@@ -31,5 +39,5 @@ func (c *localConn) osGuessConnnector() (*net.UnixConn, error) {
 			}
 		}
 	}
-	return nil, ErrorNoConnecion
+	return nil, ErrNoConnecion
 }

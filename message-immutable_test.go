@@ -1,9 +1,10 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
-	"github.com/nathanaelle/syslog5424/sdata/timequality"
 	"testing"
 	"time"
+
+	"github.com/nathanaelle/syslog5424/v2/sdata/timequality"
 )
 
 var parseTest = []string{
@@ -59,8 +60,8 @@ func Test_MessageImmutable_Values(t *testing.T) {
 		return
 	}
 
-	if a.Priority() != (LOG_USER | LOG_WARNING) {
-		t.Errorf("Writable: expected {{ %s }} got {{ %s }}", (LOG_USER | LOG_WARNING), a.Priority())
+	if a.Priority() != (LogUSER | LogWARNING) {
+		t.Errorf("Writable: expected {{ %s }} got {{ %s }}", (LogUSER | LogWARNING), a.Priority())
 		return
 	}
 
@@ -117,8 +118,8 @@ func Test_MessageImmutable_Values(t *testing.T) {
 		return
 	}
 
-	if a.Priority() != (LOG_LOCAL4 | LOG_NOTICE) {
-		t.Errorf("Writable: expected {{ %s }} got {{ %s }}", (LOG_LOCAL4 | LOG_NOTICE), a.Priority())
+	if a.Priority() != (LogLOCAL4 | LogNOTICE) {
+		t.Errorf("Writable: expected {{ %s }} got {{ %s }}", (LogLOCAL4 | LogNOTICE), a.Priority())
 		return
 	}
 
@@ -220,5 +221,16 @@ func Benchmark_MessageImmutable_Parse_MessageAndSD(b *testing.B) {
 	data := []byte(`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"] Some log message with structured data`)
 	for i := 0; i < b.N; i++ {
 		Parse(data, nil, false)
+	}
+}
+
+func Benchmark_MessageImmutable_Parse_MessageAndSD_Then_Make_Mutable(b *testing.B) {
+	data := []byte(`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"] Some log message with structured data`)
+	for i := 0; i < b.N; i++ {
+		mi, _, err := Parse(data, nil, false)
+		if err != nil {
+			panic(err)
+		}
+		mi.Writable()
 	}
 }

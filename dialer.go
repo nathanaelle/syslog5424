@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 )
 
 type (
+	// Dialer contains options for connecting to an address.
 	Dialer struct {
 		// delay to flush the queue
 		FlushDelay time.Duration
@@ -44,25 +45,25 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan erro
 	switch network {
 	case "stdio":
 		if t == nil {
-			t = T_LFENDED
+			t = TransportLFEnded
 		}
 		c = StdioConnector(address)
 
 	case "local":
 		if t == nil {
-			t = T_ZEROENDED
+			t = TransportZeroEnded
 		}
 		c = LocalConnector("", address)
 
 	case "unix", "unixgram":
 		if t == nil {
-			t = T_ZEROENDED
+			t = TransportZeroEnded
 		}
 		c = LocalConnector(network, address)
 
 	case "tcp", "tcp6", "tcp4":
 		if t == nil {
-			t = T_LFENDED
+			t = TransportLFEnded
 		}
 		c = TCPConnector(network, address)
 
@@ -71,7 +72,7 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan erro
 	}
 
 	if c == nil {
-		return nil, nil, ErrorNoConnecion
+		return nil, nil, ErrNoConnecion
 	}
 
 	sndr, chanErr := NewSender(c, t, ticker)

@@ -1,4 +1,4 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 import (
 	"encoding"
@@ -10,14 +10,21 @@ import (
 //	http://www.iana.org/assignments/syslog-parameters/syslog-parameters.xhtml#syslog-parameters-4
 
 type (
-	SDID interface {
+	// SDIDLight expose a minimal way to handle Structured Data identifier
+	SDIDLight interface {
 		String() string
 		IsIANA() bool
 		GetPEN() uint64
+	}
+
+	// SDID expose a way to handle the detection of a Structured Data
+	SDID interface {
+		SDIDLight
 		Found([]byte) (StructuredData, bool)
 		encoding.TextMarshaler
 	}
 
+	// StructuredData expose a way to encode a structured data
 	StructuredData interface {
 		SDID() SDID
 		Marshal5424() ([]byte, error)
@@ -47,8 +54,8 @@ func (o tagOptions) Contains(optionName string) bool {
 		return false
 	}
 	flags := []string(o)
-	for _, f_o := range flags {
-		if f_o == optionName {
+	for _, f := range flags {
+		if f == optionName {
 			return true
 		}
 	}

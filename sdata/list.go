@@ -1,20 +1,21 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 import (
 	"sync"
 )
 
 type (
+	// List represent a list of Structured Data
 	List []StructuredData
 
-	registry_t struct {
+	registryT struct {
 		lock  *sync.Mutex
 		sdids map[string]SDID
 	}
 )
 
 var (
-	registry = &registry_t{
+	registry = &registryT{
 		lock:  &sync.Mutex{},
 		sdids: make(map[string]SDID),
 	}
@@ -22,15 +23,16 @@ var (
 	emptyList = List([]StructuredData{})
 )
 
+// EmptyList return an empty []StructuredData
 func EmptyList() List {
 	return emptyList
 }
 
-func (registry_t) String() string {
+func (registry *registryT) String() string {
 	return "internal registry"
 }
 
-func (registry *registry_t) Found(data []byte) (StructuredData, bool) {
+func (registry *registryT) Found(data []byte) (StructuredData, bool) {
 	registry.lock.Lock()
 	defer registry.lock.Unlock()
 
@@ -40,13 +42,15 @@ func (registry *registry_t) Found(data []byte) (StructuredData, bool) {
 		}
 	}
 
-	return unknown_sdid.Found(data)
+	return unknownSDID.Found(data)
 }
 
+// Parse decode a []byte to a Structured Data
 func Parse(data []byte) (StructuredData, bool) {
 	return registry.Found(data)
 }
 
+// Register add an new SDID to a global registry
 func Register(s SDID) SDID {
 	registry.lock.Lock()
 	defer registry.lock.Unlock()
@@ -58,6 +62,7 @@ func Register(s SDID) SDID {
 	return s
 }
 
+// RegisterGroup is a wrapper around Register
 func RegisterGroup(sdids ...SDID) {
 	registry.lock.Lock()
 	defer registry.lock.Unlock()
@@ -70,30 +75,31 @@ func RegisterGroup(sdids ...SDID) {
 	}
 }
 
-// Append data to a list of structured data
+// Add append data to a list of structured data
 func (listSD List) Add(data ...StructuredData) List {
 
 	return List(append([]StructuredData(listSD), data...))
 }
 
+// Marshal5424 encode a Structured Data to syslog 5424 format
 func (listSD List) Marshal5424() ([]byte, error) {
 	if len(listSD) == 0 {
 		return []byte{'-'}, nil
 	}
 
-	ret_s := 0
-	t_a := make([][]byte, len(listSD))
+	retSize := 0
+	tmpArray := make([][]byte, len(listSD))
 	for i, sd := range listSD {
 		t, err := sd.Marshal5424()
 		if err != nil {
 			return nil, err
 		}
-		ret_s += len(t)
-		t_a[i] = t
+		retSize += len(t)
+		tmpArray[i] = t
 	}
 
-	ret := make([]byte, 0, ret_s)
-	for _, sd := range t_a {
+	ret := make([]byte, 0, retSize)
+	for _, sd := range tmpArray {
 		ret = append(ret, sd...)
 	}
 
@@ -106,6 +112,7 @@ func (listSD List) String() (s string) {
 	return
 }
 
-func (p List) MarshalText() ([]byte, error) {
-	return p.Marshal5424()
+// MarshalText implements encoding.TextMarshaller
+func (listSD List) MarshalText() ([]byte, error) {
+	return listSD.Marshal5424()
 }

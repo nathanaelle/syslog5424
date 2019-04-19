@@ -1,4 +1,4 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 import (
 	"fmt"
@@ -6,27 +6,29 @@ import (
 )
 
 type (
+	// Foundable is the minimal part of the SDID interface for testing
 	Foundable interface {
 		String() string
 		Found([]byte) (StructuredData, bool)
 	}
 
-	ValidTest struct {
+	validTest struct {
 		Orig string
 		Obj  StructuredData
 		Enc  string
 	}
 
+	// SDTest describe the common interface of any test on Structured Data
 	SDTest interface {
 		DoTest(sdid Foundable) error
 	}
 
-	InvalidMarshal struct {
+	invalidMarshal struct {
 		Obj StructuredData
 		Err error
 	}
 
-	InvalidUnmarshal struct {
+	invalidUnmarshal struct {
 		Orig string
 	}
 
@@ -36,7 +38,31 @@ type (
 	}
 )
 
-func (val ValidTest) DoTest(sdid Foundable) error {
+// TestValid define a test for valid Structured Data
+func TestValid(Orig string, Obj StructuredData, Enc string) SDTest {
+	return validTest{
+		Orig: Orig,
+		Obj:  Obj,
+		Enc:  Enc,
+	}
+}
+
+// TestInvalidUnmarshal define a test a non Unmarshallable Structured Data
+func TestInvalidUnmarshal(Orig string) SDTest {
+	return invalidUnmarshal{
+		Orig: Orig,
+	}
+}
+
+// TestInvalidMarshal define a test a non Marshallable Structured Data
+func TestInvalidMarshal(Obj StructuredData, Err error) SDTest {
+	return invalidMarshal{
+		Obj: Obj,
+		Err: Err,
+	}
+}
+
+func (val validTest) DoTest(sdid Foundable) error {
 	o, ok := sdid.Found([]byte(val.Orig))
 	if !ok {
 		return fmt.Errorf("%v can't parse : %v", sdid, val.Orig)
@@ -80,7 +106,7 @@ func (val genericTest) DoTest(sdid Foundable) error {
 	return nil
 }
 
-func (val InvalidMarshal) DoTest(sdid Foundable) error {
+func (val invalidMarshal) DoTest(sdid Foundable) error {
 	_, err := val.Obj.Marshal5424()
 	if err != val.Err {
 		return fmt.Errorf("expect err : %v got : %v", val.Err, err)
@@ -88,7 +114,7 @@ func (val InvalidMarshal) DoTest(sdid Foundable) error {
 	return nil
 }
 
-func (val InvalidUnmarshal) DoTest(sdid Foundable) error {
+func (val invalidUnmarshal) DoTest(sdid Foundable) error {
 	_, ok := sdid.Found([]byte(val.Orig))
 	if ok {
 		return fmt.Errorf("%v SHOULDNT PARSE : %v", sdid, val.Orig)

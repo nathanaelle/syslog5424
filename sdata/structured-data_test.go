@@ -1,4 +1,4 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 import (
 	"testing"
@@ -52,7 +52,7 @@ func pint(a int) *int {
 	return &a
 }
 
-var sd_t []SDTest = []SDTest{
+var sdt = []SDTest{
 	genericTest{
 		`[exampleSDID@32473 eventID="1011" eventSource="Application" iut="3"]`,
 		GenericSD(exampleSDID{"iut": "3", "eventSource": "Application", "eventID": "1011"}),
@@ -65,12 +65,12 @@ var sd_t []SDTest = []SDTest{
 		`[origin ip="192.0.2.1" ip="192.0.2.129"]`,
 		GenericSD(origin{"ip": []string{"192.0.2.1", "192.0.2.129"}}),
 	},
-	InvalidUnmarshal{`[ exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`},
-	InvalidUnmarshal{`[exampleSDID iut="3" eventSource ="Application" eventID="1011"]`},
+	TestInvalidUnmarshal(`[ exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"]`),
+	TestInvalidUnmarshal(`[exampleSDID iut="3" eventSource ="Application" eventID="1011"]`),
 }
 
 func TestStructuredData(t *testing.T) {
-	for i, val := range sd_t {
+	for i, val := range sdt {
 		if err := val.DoTest(registry); err != nil {
 			t.Errorf("test %3d failed : %v", i, err)
 		}

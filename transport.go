@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"bytes"
@@ -19,6 +19,7 @@ type (
 
 	tGuess struct{}
 
+	// Transport describe a generic way to encode and decode syslog 5424 on an connexion
 	Transport interface {
 		// Set the sub conn where to write the transport-encoded data
 		Encode([]byte) []byte
@@ -34,14 +35,14 @@ type (
 )
 
 var (
-	// T_ZEROENDED is commonly used transport with "unix" and "unixgram"
-	T_ZEROENDED Transport = tZeroEnded{}
+	// TransportZeroEnded is commonly used transport with "unix" and "unixgram"
+	TransportZeroEnded Transport = tZeroEnded{}
 
-	// T_LFENDED is commonly used transport with "tcp" "tcp4" and "tcp6"
-	T_LFENDED Transport = tLFEnded{}
+	// TransportLFEnded is commonly used transport with "tcp" "tcp4" and "tcp6"
+	TransportLFEnded Transport = tLFEnded{}
 
-	// T_RFC5425 is performant transport specified in RFC 5425
-	T_RFC5425 Transport = tRFC5425{}
+	// TransportRFC5425 is performant transport specified in RFC 5425
+	TransportRFC5425 Transport = tRFC5425{}
 )
 
 func (t tZeroEnded) String() string {
@@ -80,21 +81,21 @@ func (t tRFC5425) PrefixStrip(buffer []byte, atEOF bool) (data, rest []byte, err
 		return nil, nil, nil
 	}
 
-	sep_pos := bytes.IndexByte(buffer, ' ')
-	if sep_pos <= 0 {
-		return nil, nil, ERR_TRANSPORT_NOHEADER
+	sepPos := bytes.IndexByte(buffer, ' ')
+	if sepPos <= 0 {
+		return nil, nil, ErrTransportNoHeader
 	}
 
-	lenMsg, err := strconv.Atoi(string(buffer[0:sep_pos]))
+	lenMsg, err := strconv.Atoi(string(buffer[0:sepPos]))
 	if err != nil {
-		return nil, nil, ERR_TRANSPORT_INVHEADER
+		return nil, nil, ErrTransportInvHeader
 	}
 
-	start := sep_pos + 1
+	start := sepPos + 1
 	lenBuff := start + lenMsg
 	if len(buffer) < lenBuff {
 		if atEOF {
-			return buffer[start:], nil, ERR_TRANSPORT_INCOMPLETE
+			return buffer[start:], nil, ErrTransportIncomplete
 		}
 		return nil, nil, nil
 	}
@@ -129,7 +130,7 @@ func (t tLFEnded) SuffixStrip(buffer []byte, atEOF bool) (data, rest []byte, err
 	}
 
 	if atEOF {
-		return buffer, nil, ERR_TRANSPORT_INCOMPLETE
+		return buffer, nil, ErrTransportIncomplete
 	}
 
 	return buffer, nil, nil

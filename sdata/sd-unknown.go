@@ -1,4 +1,4 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 type (
 	unknownDef struct{}
@@ -12,13 +12,13 @@ type (
 	}
 )
 
-var unknown_sdid SDID = unknownDef{}
+var unknownSDID SDID = unknownDef{}
 
-func (_ unknownDef) String() string {
+func (d unknownDef) String() string {
 	return "unknown Structured Data"
 }
 
-func (_ unknownDef) Options() map[string]interface{} {
+func (d unknownDef) Options() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -30,19 +30,19 @@ func (d unknownDef) Default() unknownSD {
 	return unknownSD{"", nil}
 }
 
-func (_ unknownDef) IsIANA() bool {
+func (d unknownDef) IsIANA() bool {
 	return false
 }
 
-func (_ unknownDef) GetPEN() uint64 {
+func (d unknownDef) GetPEN() uint64 {
 	return 32473
 }
 
-func (_ unknownDef) MarshalText() (text []byte, err error) {
+func (d unknownDef) MarshalText() (text []byte, err error) {
 	return []byte("unknown@32473"), nil
 }
 
-func (_ unknownDef) Found(data []byte) (StructuredData, bool) {
+func (d unknownDef) Found(data []byte) (StructuredData, bool) {
 	if data[0] != '[' || data[len(data)-1] != ']' {
 		return nil, false
 	}
@@ -82,14 +82,14 @@ func (_ unknownDef) Found(data []byte) (StructuredData, bool) {
 	return ret, true
 }
 
-func (_ unknownSD) SDID() SDID {
-	return unknown_sdid
+func (d unknownSD) SDID() SDID {
+	return unknownSDID
 }
 
-func (sd unknownSD) Marshal5424() ([]byte, error) {
-	ret := "[" + sd.Name
+func (d unknownSD) Marshal5424() ([]byte, error) {
+	ret := "[" + d.Name
 
-	for _, pair := range sd.Map {
+	for _, pair := range d.Map {
 		ret += " " + pair.K + "=\"" + pair.V + "\""
 	}
 

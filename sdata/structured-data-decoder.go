@@ -1,4 +1,4 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 import (
 	"reflect"
@@ -8,32 +8,18 @@ import (
 type (
 	decodeState struct {
 	}
-
-	InvalidUnmarshalError struct {
-		Type reflect.Type
-	}
 )
 
-func (e *InvalidUnmarshalError) Error() string {
-	if e.Type == nil {
-		return "sd5424: Unmarshal(nil)"
-	}
-
-	if e.Type.Kind() != reflect.Ptr {
-		return "sd5424: Unmarshal(non-pointer " + e.Type.String() + ")"
-	}
-	return "sd5424: Unmarshal(nil " + e.Type.String() + ")"
-}
-
-func UnmarshalSD(data []byte, sd_i interface{}) error {
+// UnmarshalSD decode a []byte to a golang struct
+func UnmarshalSD(data []byte, v interface{}) error {
 	var d decodeState
 
-	sd := reflect.ValueOf(sd_i)
+	sd := reflect.ValueOf(v)
 	if sd.Kind() != reflect.Ptr || sd.IsNil() {
-		return &InvalidUnmarshalError{reflect.TypeOf(sd_i)}
+		return &InvalidUnmarshalError{reflect.TypeOf(v)}
 	}
 
-	return d.unmarshal(sd_i)
+	return d.unmarshal(v)
 }
 
 func (d *decodeState) unmarshal(v interface{}) (err error) {

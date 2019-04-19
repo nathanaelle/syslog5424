@@ -1,20 +1,21 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"net"
 )
 
 type (
-	tcp_receiver struct {
+	tcpReceiver struct {
 		listener *net.TCPListener
 	}
 )
 
+// TCPListener create a TCP Listener
 func TCPListener(network, address string) (Listener, error) {
 	var err error
 
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
-		return nil, ErrorInvalidNetwork
+		return nil, ErrInvalidNetwork
 	}
 
 	laddr, err := net.ResolveTCPAddr(network, address)
@@ -22,7 +23,7 @@ func TCPListener(network, address string) (Listener, error) {
 		return nil, err
 	}
 
-	r := new(tcp_receiver)
+	r := new(tcpReceiver)
 	r.listener, err = net.ListenTCP(network, laddr)
 	if err != nil {
 		return nil, err
@@ -31,7 +32,7 @@ func TCPListener(network, address string) (Listener, error) {
 	return r, nil
 }
 
-func (r *tcp_receiver) Accept() (DataReader, error) {
+func (r *tcpReceiver) Accept() (DataReader, error) {
 	conn, err := r.listener.AcceptTCP()
 	if err != nil {
 		return nil, err
@@ -43,6 +44,6 @@ func (r *tcp_receiver) Accept() (DataReader, error) {
 	return conn, nil
 }
 
-func (r *tcp_receiver) Close() error {
+func (r *tcpReceiver) Close() error {
 	return r.listener.Close()
 }

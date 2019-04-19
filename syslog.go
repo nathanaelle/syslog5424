@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"errors"
@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	devNull *devnull = new(devnull)
+	devNull = &devnull{}
 )
 
+// Syslog describes a sysloger
 type Syslog struct {
 	facility Priority
 	hostname string
@@ -17,29 +18,30 @@ type Syslog struct {
 	appname  string
 	channels []Channel
 	output   *Sender
-	min_sev  int
+	minSev   int
 }
 
-func New(output *Sender, min_priority Priority, appname string) (syslog *Syslog, err error) {
+// New create a new Syslog
+func New(output *Sender, minPriority Priority, appname string) (syslog *Syslog, err error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "-"
 	}
-	hostname = valid_host(hostname)
+	hostname = validHost(hostname)
 
 	if appname == "" {
 		err = errors.New("syslog.New needs a non empty appname")
 		return
 	}
-	appname = valid_app(appname)
+	appname = validApp(appname)
 
 	syslog = &Syslog{
-		facility: min_priority.Facility(),
+		facility: minPriority.Facility(),
 		hostname: hostname,
 		pid:      strconv.Itoa(os.Getpid()),
 		appname:  appname,
 		output:   output,
-		min_sev:  int(min_priority.Severity()),
+		minSev:   int(minPriority.Severity()),
 	}
 
 	if syslog.pid == "" {
@@ -49,11 +51,14 @@ func New(output *Sender, min_priority Priority, appname string) (syslog *Syslog,
 	return syslog, nil
 }
 
+// TestMode prefill hostname and pid.
+// this is only for test purpose
 func (syslog *Syslog) TestMode() {
 	syslog.hostname = "localhost"
 	syslog.pid = "1234"
 }
 
+// Channel expose a custom channel for a priority
 func (syslog *Syslog) Channel(sev Priority) Channel {
 	if syslog.channels == nil {
 		syslog.channels = []Channel{
@@ -61,7 +66,7 @@ func (syslog *Syslog) Channel(sev Priority) Channel {
 			devNull, devNull, devNull, devNull,
 		}
 
-		for sev := 0; sev <= syslog.min_sev; sev++ {
+		for sev := 0; sev <= syslog.minSev; sev++ {
 			syslog.channels[sev] = &trueChannel{msgChannel{
 				priority: syslog.facility | Priority(sev),
 				hostname: syslog.hostname,
@@ -76,14 +81,16 @@ func (syslog *Syslog) Channel(sev Priority) Channel {
 	return syslog.channels[sev.Severity()]
 }
 
-func (syslog *Syslog) SubSyslog(sub_appname string) (sub *Syslog) {
+// SubSyslog create a syslog for a subAppName
+// this allow to postfix to remplace the AppName with AppName/SubAppName
+func (syslog *Syslog) SubSyslog(subAppName string) (sub *Syslog) {
 	var appname string
 
 	switch syslog.appname {
 	case "-":
-		appname = sub_appname
+		appname = subAppName
 	default:
-		appname = syslog.appname + "/" + sub_appname
+		appname = syslog.appname + "/" + subAppName
 	}
 
 	sub = &Syslog{
@@ -96,10 +103,10 @@ func (syslog *Syslog) SubSyslog(sub_appname string) (sub *Syslog) {
 			devNull, devNull, devNull, devNull,
 			devNull, devNull, devNull, devNull,
 		},
-		min_sev: syslog.min_sev,
+		minSev: syslog.minSev,
 	}
 
-	for sev := 0; sev <= syslog.min_sev; sev++ {
+	for sev := 0; sev <= syslog.minSev; sev++ {
 		sub.channels[sev] = &trueChannel{msgChannel{
 			priority: syslog.facility | Priority(sev),
 			hostname: syslog.hostname,

@@ -1,14 +1,16 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
-	"github.com/nathanaelle/syslog5424/sdata"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/nathanaelle/syslog5424/v2/sdata"
 )
 
+// Message describe a mutable Syslog 5424 Message
 type Message struct {
 	prio      Priority
 	timestamp time.Time
@@ -20,38 +22,38 @@ type Message struct {
 	message   string
 }
 
-// format of a RFC 5424 TimeStamp
+// RFC5424TimeStamp is the format of a RFC 5424 TimeStamp
 const RFC5424TimeStamp string = "2006-01-02T15:04:05.999999Z07:00"
 
 var hostname, _ = os.Hostname()
 
-// Create a Message with the timestamp, hostname, appname, the priority and the message preset
+// CreateMessage create a Message with the timestamp, hostname, appname, the priority and the message preset
 func CreateMessage(appname string, prio Priority, message string) Message {
-	return Message{prio, time.Now(), hostname, valid_app(appname), "-", "-", sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
+	return Message{prio, time.Now(), hostname, validApp(appname), "-", "-", sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
-// Create a whole Message
+// CreateWholeMessage create a whole Message
 func CreateWholeMessage(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
-	return Message{prio, ts, valid_host(host), valid_app(app), valid_procid(pid), valid_msgid(msgid), sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
+	return Message{prio, ts, validHost(host), validApp(app), validProcid(pid), validMsgid(msgid), sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
 // Forge a whole Message
 // hidden func because there is bypass
-func forge_message(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
+func forgeMessage(prio Priority, ts time.Time, host, app, pid, msgid, message string) Message {
 	return Message{prio, ts, host, app, pid, msgid, sdata.EmptyList(), strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
-// Create an empty Message
+// EmptyMessage create an empty Message
 func EmptyMessage() Message {
 	return Message{Priority(0), time.Unix(0, 0), "-", "-", "-", "-", sdata.EmptyList(), ""}
 }
 
-// Set the timestamp to time.Now()
+// Now set the timestamp to time.Now()
 func (msg Message) Now() Message {
 	return Message{msg.prio, time.Now(), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-func stamp_to_ts(stamp string) time.Time {
+func stampToTs(stamp string) time.Time {
 	now := time.Now()
 	ts, _ := time.Parse(time.Stamp, stamp)
 	year := now.Year()
@@ -63,80 +65,81 @@ func stamp_to_ts(stamp string) time.Time {
 	return time.Date(year, ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), ts.Nanosecond(), ts.Location())
 }
 
-// Set the timestamp from a time.Stamp string
+// Timestamp set the timestamp from a time.Stamp string
 func (msg Message) Timestamp(stamp string) Message {
-	return Message{msg.prio, stamp_to_ts(stamp), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+	return Message{msg.prio, stampToTs(stamp), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-func delta_boot_to_ts(boot_ts time.Time, s_sec string, s_nsec string) time.Time {
-	sec, _ := strconv.ParseInt(s_sec, 10, 64)
-	nsec, _ := strconv.ParseInt(s_nsec, 10, 64)
+func deltaBootToTs(bootTs time.Time, strSec string, strNsec string) time.Time {
+	sec, _ := strconv.ParseInt(strSec, 10, 64)
+	nsec, _ := strconv.ParseInt(strNsec, 10, 64)
 
-	return boot_ts.Add(time.Duration(nsec)*time.Nanosecond + time.Duration(sec)*time.Second)
+	return bootTs.Add(time.Duration(nsec)*time.Nanosecond + time.Duration(sec)*time.Second)
 }
 
-// Set the timestamp from a time elapsed since boot time
-func (msg Message) Delta(boot_ts time.Time, s_sec string, s_nsec string) Message {
-	return Message{msg.prio, delta_boot_to_ts(boot_ts, s_sec, s_nsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Delta set the timestamp from a time elapsed since boot time
+func (msg Message) Delta(bootTs time.Time, strSec string, strNsec string) Message {
+	return Message{msg.prio, deltaBootToTs(bootTs, strSec, strNsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-func epoc_to_ts(s_sec string, s_nsec string) time.Time {
-	sec, _ := strconv.ParseInt(s_sec, 10, 64)
-	nsec, _ := strconv.ParseInt(s_nsec, 10, 64)
+func epochToTs(strSec string, strNsec string) time.Time {
+	sec, _ := strconv.ParseInt(strSec, 10, 64)
+	nsec, _ := strconv.ParseInt(strNsec, 10, 64)
 
 	return time.Unix(sec, nsec)
 }
 
-// set the date of a Message with a epoch TimeStamp
-func (msg Message) Epoch(s_sec string, s_nsec string) Message {
-	return Message{msg.prio, epoc_to_ts(s_sec, s_nsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+// Epoch set the date of a Message with a epoch TimeStamp
+func (msg Message) Epoch(strSec string, strNsec string) Message {
+	return Message{msg.prio, epochToTs(strSec, strNsec), msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-// set the app-name of a Message
+// Host set the app-name of a Message
 func (msg Message) Host(host string) Message {
-	return Message{msg.prio, msg.timestamp, valid_host(host), msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
+	return Message{msg.prio, msg.timestamp, validHost(host), msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-// set the app-name of a Message
+// Time set the timestamp of a Message
 func (msg Message) Time(ts time.Time) Message {
 	return Message{msg.prio, ts, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-// set the app-name of a Message
+// AppName set the app-name of a Message
 func (msg Message) AppName(appname string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, valid_app(appname), msg.procid, msg.msgid, msg.sd, msg.message}
+	return Message{msg.prio, msg.timestamp, msg.hostname, validApp(appname), msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-// set the proc-id of a Message
+// ProcID set the proc-id of a Message
 func (msg Message) ProcID(procid string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, valid_procid(procid), msg.msgid, msg.sd, msg.message}
+	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, validProcid(procid), msg.msgid, msg.sd, msg.message}
 }
 
-// set the msg-id of a Message
+// MsgID set the msg-id of a Message
 func (msg Message) MsgID(msgid string) Message {
-	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, valid_msgid(msgid), msg.sd, msg.message}
+	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, validMsgid(msgid), msg.sd, msg.message}
 }
 
-// set the priority of a Message
+// Priority set the priority of a Message
 func (msg Message) Priority(prio Priority) Message {
 	return Message{prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-//set the hostname as the value get with gethostbyname()
+// LocalHost set the hostname as the value get with gethostbyname()
 func (msg Message) LocalHost() Message {
 	return Message{msg.prio, msg.timestamp, hostname, msg.appname, msg.procid, msg.msgid, msg.sd, msg.message}
 }
 
-//set the message part of a Message
+// Msg set the message part of a Message
 func (msg Message) Msg(message string) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd, strings.TrimRightFunc(message, unicode.IsSpace)}
 }
 
-//set the message part of a Message
+// StructuredData set the message part of a Message
 func (msg Message) StructuredData(data ...sdata.StructuredData) Message {
 	return Message{msg.prio, msg.timestamp, msg.hostname, msg.appname, msg.procid, msg.msgid, msg.sd.Add(data...), msg.message}
 }
 
+// Marshal5424 encode a message to the syslog 5424 format
 func (msg Message) Marshal5424() ([]byte, error) {
 	var ret []byte
 	prio, err := msg.prio.Marshal5424()

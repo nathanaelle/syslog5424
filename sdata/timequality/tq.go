@@ -1,22 +1,27 @@
-package timequality // import "github.com/nathanaelle/syslog5424/sdata/timequality"
+package timequality // import "github.com/nathanaelle/syslog5424/v2/sdata/timequality"
 
 import (
-	"github.com/nathanaelle/syslog5424/sdata"
 	"errors"
 	"math"
 	"strconv"
+
+	"github.com/nathanaelle/syslog5424/v2/sdata"
 )
 
 func init() {
 	TQ = sdata.Register(tqdef{})
 }
 
-var TQ sdata.SDID
-var InvalidTimeQuality error = errors.New("Invalid TimeQuality struct")
+var (
+	TQ sdata.SDID
+
+	ErrInvalidTimeQuality = errors.New("Invalid TimeQuality struct")
+)
 
 type (
 	tqdef struct{}
 
+	// TimeQuality implements
 	TimeQuality struct {
 		TzKnown      bool `sd5424:"tzKnown"`
 		IsSynced     bool `sd5424:"isSynced"`
@@ -24,11 +29,11 @@ type (
 	}
 )
 
-func (_ tqdef) String() string {
+func (d tqdef) String() string {
 	return "TimeQuality"
 }
 
-func (_ tqdef) Options() map[string]interface{} {
+func (d tqdef) Options() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -40,19 +45,19 @@ func (d tqdef) Default() TimeQuality {
 	return TimeQuality{false, false, nil}
 }
 
-func (_ tqdef) IsIANA() bool {
+func (d tqdef) IsIANA() bool {
 	return true
 }
 
-func (_ tqdef) GetPEN() uint64 {
+func (d tqdef) GetPEN() uint64 {
 	return 0
 }
 
-func (_ tqdef) MarshalText() (text []byte, err error) {
+func (d tqdef) MarshalText() (text []byte, err error) {
 	return []byte("timeQuality"), nil
 }
 
-func (_ tqdef) Found(data []byte) (sdata.StructuredData, bool) {
+func (d tqdef) Found(data []byte) (sdata.StructuredData, bool) {
 	if data[0] != '[' || data[len(data)-1] != ']' {
 		return nil, false
 	}
@@ -122,17 +127,20 @@ func (_ tqdef) Found(data []byte) (sdata.StructuredData, bool) {
 	return tq, true
 }
 
-func (_ TimeQuality) SDID() sdata.SDID {
+// SDID implements sdata.StructuredData
+func (tq TimeQuality) SDID() sdata.SDID {
 	return TQ
 }
 
+// IsValid test the validity of a TimeQuality Structured Data
 func (tq TimeQuality) IsValid() bool {
 	return !((!tq.TzKnown && tq.IsSynced) || (!tq.IsSynced && tq.SyncAccuracy != nil))
 }
 
+// Marshal5424  implements sdata.StructuredData
 func (tq TimeQuality) Marshal5424() ([]byte, error) {
 	if !tq.IsValid() {
-		return nil, InvalidTimeQuality
+		return nil, ErrInvalidTimeQuality
 	}
 
 	length := 13

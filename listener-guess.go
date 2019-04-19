@@ -1,6 +1,6 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
-// helper that provide the correct Listener when network is not known at compilation time
+// GuessListener guess the correct Listener when network is not known at compilation time
 func GuessListener(network, address string) (Listener, error) {
 	switch network {
 	case "tcp", "tcp4", "tcp6":
@@ -12,5 +12,5 @@ func GuessListener(network, address string) (Listener, error) {
 
 	}
 
-	return nil, ErrorInvalidNetwork
+	return nil, ErrInvalidNetwork
 }

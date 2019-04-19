@@ -1,4 +1,4 @@
-package sdata // import "github.com/nathanaelle/syslog5424/sdata"
+package sdata // import "github.com/nathanaelle/syslog5424/v2/sdata"
 
 import (
 	"bytes"
@@ -27,6 +27,7 @@ func (sv stringValues) Swap(i, j int)      { sv[i], sv[j] = sv[j], sv[i] }
 func (sv stringValues) Less(i, j int) bool { return sv.get(i) < sv.get(j) }
 func (sv stringValues) get(i int) string   { return sv[i].String() }
 
+// MarshalSD encode a structured data to a []byte
 func MarshalSD(sd interface{}) []byte {
 	e := &encodeState{}
 	err := e.marshal(sd)
@@ -130,7 +131,7 @@ func newTypeEncoder(t reflect.Type, root bool) encoderFunc {
 		case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 			reflect.Uintptr, reflect.Float32, reflect.Float64, reflect.String:
-			return encodeur_flemard
+			return encodeurFlemmard
 
 		case reflect.Interface:
 			return newTypeEncoder(t.Elem(), false)
@@ -159,7 +160,7 @@ func marshalerEncoder(e *encodeState, v reflect.Value, prefix []byte) {
 }
 
 // trivial encoder for string, int, float, bool, ... based on Sprintf
-func encodeur_flemard(e *encodeState, v reflect.Value, prefix []byte) {
+func encodeurFlemmard(e *encodeState, v reflect.Value, prefix []byte) {
 	e.PrefixedWrite(prefix, []byte(fmt.Sprintf("%v", v.Interface())))
 }
 
@@ -245,10 +246,10 @@ func getName(field reflect.StructField) ([]byte, bool) {
 	if tag == "-" {
 		return []byte{}, false
 	}
-	t_name, opts := parseTag(tag)
+	tagName, opts := parseTag(tag)
 	mandatory := opts.Contains("mandatory")
-	if isValidTag(t_name) {
-		name = t_name
+	if isValidTag(tagName) {
+		name = tagName
 	}
 
 	return []byte(name), mandatory

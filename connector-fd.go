@@ -1,4 +1,4 @@
-package syslog5424 // import "github.com/nathanaelle/syslog5424"
+package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 // StdioConnector returns a Connector that only forward to stderr: or stdout:
 func StdioConnector(addr string) Connector {
 	if addr == "" {
-		return InvalidConnector{ErrorEmptyNetworkAddress}
+		return InvalidConnector{ErrEmptyNetworkAddress}
 	}
 
 	switch addr {
@@ -24,5 +24,5 @@ func StdioConnector(addr string) Connector {
 
 	// TODO implement file logging here
 
-	return InvalidConnector{ErrorInvalidAddress}
+	return InvalidConnector{ErrInvalidAddress}
 }
