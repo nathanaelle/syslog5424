@@ -1,9 +1,12 @@
 language: go
 go_import_path: github.com/nathanaelle/syslog5424/v2
 go:
-- tip
-- 1.12
+  - tip
+  - 1.13
+  - 1.12
 branches:
   except:
   - /poc-.*/
   - experimental
+env:
+  - GO111MODULE=on

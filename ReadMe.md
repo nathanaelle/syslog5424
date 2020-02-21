@@ -1,6 +1,6 @@
 # Syslog5424
 
-![License](http://img.shields.io/badge/license-Simplified_BSD-blue.svg?style=flat) [![Go Doc](http://img.shields.io/badge/godoc-syslog5424-blue.svg?style=flat)](http://godoc.org/github.com/nathanaelle/syslog5424) [![Build Status](https://travis-ci.org/nathanaelle/syslog5424.svg?branch=master)](https://travis-ci.org/nathanaelle/syslog5424) [![Coverage](http://gocover.io/_badge/github.com/nathanaelle/syslog5424)](http://gocover.io/github.com/nathanaelle/syslog5424)
+![License](http://img.shields.io/badge/license-Simplified_BSD-blue.svg?style=flat) [![Go Doc](http://img.shields.io/badge/godoc-syslog5424-blue.svg?style=flat)](http://godoc.org/github.com/nathanaelle/syslog5424) [![Build Status](https://travis-ci.org/nathanaelle/syslog5424.svg?branch=master)](https://travis-ci.org/nathanaelle/syslog5424) [![Go Report Card](https://goreportcard.com/badge/github.com/nathanaelle/syslog5424)](https://goreportcard.com/report/github.com/nathanaelle/syslog5424)
 
 ## Example
 

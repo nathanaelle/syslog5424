@@ -17,7 +17,7 @@ var parseTest = []string{
 	`<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.`,
 	`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"] \xEF\xBB\xBFAn application event log entry...`,
 	`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"]`,
-	`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][exampleEscape@32473 text="some[data\]here"]`,
+	`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][exampleEscape@32473 text="some[data\] here"]`,
 }
 
 func Test_MessageImmutable_Parse(t *testing.T) {
@@ -171,56 +171,113 @@ Actual performance are :
 
 go test -cpu 1 -benchtime=10s -bench=MessageImmutable_Parse -benchmem
 goarch: amd64
-Benchmark_MessageImmutable_Parse_Minimal      	100000000	       199 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_MessageNoSD  	100000000	       228 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_KnownSDOnly  	50000000	       240 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_UnkownSDOnly 	100000000	       238 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_MessageAndSD 	50000000	       286 ns/op	      64 B/op	       1 allocs/op
+pkg: github.com/nathanaelle/syslog5424/v2
+Benchmark_MessageImmutable_Parse_Minimal                        	100000000	       117 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MessageNoSD                    	89648371	       138 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_KnownSDOnly                    	87056971	       140 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_UnkownSDOnly                   	88181227	       140 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MessageAndSD                   	75508340	       163 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_Verylong                       	59195804	       188 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MaxLength                      	64618474	       176 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MessageAndSD_Then_Make_Mutable 	 5349686	      2237 ns/op	     736 B/op	      24 allocs/op
 PASS
 
 go test -cpu 4 -benchtime=10s -bench=MessageImmutable_Parse -benchmem
 goarch: amd64
-Benchmark_MessageImmutable_Parse_Minimal-4        	100000000	       182 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_MessageNoSD-4    	100000000	       207 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_KnownSDOnly-4    	100000000	       223 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_UnkownSDOnly-4   	100000000	       222 ns/op	      64 B/op	       1 allocs/op
-Benchmark_MessageImmutable_Parse_MessageAndSD-4   	50000000	       265 ns/op	      64 B/op	       1 allocs/op
+pkg: github.com/nathanaelle/syslog5424/v2
+Benchmark_MessageImmutable_Parse_Minimal-4                          	100000000	       113 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MessageNoSD-4                      	91566769	       130 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_KnownSDOnly-4                      	90291741	       130 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_UnkownSDOnly-4                     	92336280	       129 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MessageAndSD-4                     	76834656	       154 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_Verylong-4                         	67873761	       176 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MaxLength-4                        	72529458	       168 ns/op	      64 B/op	       1 allocs/op
+Benchmark_MessageImmutable_Parse_MessageAndSD_Then_Make_Mutable-4   	 5741421	      2106 ns/op	     736 B/op	      24 allocs/op
 PASS
 
 */
 
 func Benchmark_MessageImmutable_Parse_Minimal(b *testing.B) {
+	var err error
+
 	data := []byte(`<0>1 1970-01-01T01:00:00+01:00 - - - - -`)
 	for i := 0; i < b.N; i++ {
-		Parse(data, nil, false)
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_MessageNoSD(b *testing.B) {
+	var err error
+
 	data := []byte(`<165>1 2003-08-24T05:14:15.000003-07:00 192.0.2.1 myproc 8710 - - %% It's time to make the do-nuts.`)
 	for i := 0; i < b.N; i++ {
-		Parse(data, nil, false)
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_KnownSDOnly(b *testing.B) {
+	var err error
+
 	data := []byte(`<0>1 1970-01-01T01:00:00Z - - - - [timeQuality tzKnown="1" isSynced="1"]`)
 	for i := 0; i < b.N; i++ {
-		Parse(data, nil, false)
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_UnkownSDOnly(b *testing.B) {
+	var err error
+
 	data := []byte(`<0>1 1970-01-01T01:00:00Z - - - - [timeQualitat tzKnown="1" isSynced="1"]`)
 	for i := 0; i < b.N; i++ {
-		Parse(data, nil, false)
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
 	}
 }
 
 func Benchmark_MessageImmutable_Parse_MessageAndSD(b *testing.B) {
+	var err error
+
 	data := []byte(`<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog - ID47 [exampleSDID@32473 iut="3" eventSource="Application" eventID="1011"][examplePriority@32473 class="high"] Some log message with structured data`)
 	for i := 0; i < b.N; i++ {
-		Parse(data, nil, false)
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Benchmark_MessageImmutable_Parse_Verylong(b *testing.B) {
+	var err error
+
+	data := []byte(`<190>1 2016-02-21T01:19:11+00:00 batch6sj - - - [meta sequenceId="21881798" x-group="37051387"][origin x-service="tracking"] metascutellar conversationalist nephralgic exogenetic graphy streng outtaken acouasm amateurism prenotice Lyonese bedull antigrammatical diosphenol gastriloquial bayoneteer sweetener naggy roughhouser dighter addend sulphacid uneffectless ferroprussiate reveal Mazdaist plaudite Australasian distributival wiseman rumness Seidel topazine shahdom sinsion mesmerically pinguedinous ophthalmotonometer scuppler wound eciliate expectedly carriwitchet dictatorialism bindweb pyelitic idic atule kokoon poultryproof rusticial seedlip nitrosate splenadenoma holobenthic uneternal Phocaean epigenic doubtlessly indirection torticollar robomb adoptedly outspeak wappenschawing talalgia Goop domitic savola unstrafed carded unmagnified mythologically orchester obliteration imperialine undisobeyed galvanoplastical cycloplegia quinquennia foremean umbonal marcgraviaceous happenstance theoretical necropoles wayworn Igbira pseudoangelic raising unfrounced lamasary centaurial Japanolatry microlepidoptera`)
+	for i := 0; i < b.N; i++ {
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Benchmark_MessageImmutable_Parse_MaxLength(b *testing.B) {
+	var err error
+
+	data := []byte(`<191>1 2018-12-31T23:59:59.999999-23:59 abcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabc abcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdef abcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzabcdefghilmnopqrstuvzab abcdefghilmnopqrstuvzabcdefghilm [an@id key1="val1" key2="val2"][another@id key1="val1"] Some message "GET"`)
+	for i := 0; i < b.N; i++ {
+		_, _, err = Parse(data, nil, false)
+	}
+	if err != nil {
+		panic(err)
 	}
 }
 
