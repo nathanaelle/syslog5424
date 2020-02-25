@@ -1,5 +1,6 @@
 /*
-Package syslog5424 implements syslog RFC 5424 with a completly API compatibility with the standard log.Logger
+
+Package syslog5424 implements syslog RFC 5424 with a complete compatibility with the standard log.Logger API.
 
 
 the simpliest way to use syslog5424 is :
