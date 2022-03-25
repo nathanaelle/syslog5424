@@ -15,8 +15,8 @@ type (
 )
 
 var (
-	ErrBufferClose = errors.New("error in syslog5424 at buffer.Close()")
-	ErrNoConnecion = errors.New("No Connection established")
+	ErrBufferClose  = errors.New("error in syslog5424 at buffer.Close()")
+	ErrNoConnection = errors.New("No Connection established")
 
 	ErrPos0                = errors.New("Pos 0 Found")
 	ErrPosNotFound         = errors.New("Pos Not Found")

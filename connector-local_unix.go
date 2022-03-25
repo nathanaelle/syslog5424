@@ -1,4 +1,5 @@
-// +build darwin linux freebsd netbsd openbsd dragonfly
+//go:build darwin || linux || freebsd || netbsd || openbsd || dragonfly || illumos
+// +build darwin linux freebsd netbsd openbsd dragonfly illumos
 
 package syslog5424 // import "github.com/nathanaelle/syslog5424/v2"
 
@@ -22,7 +23,7 @@ func (c *localConn) osGuessConnnector() (*net.UnixConn, error) {
 				return conn, nil
 			}
 		}
-		return nil, ErrNoConnecion
+		return nil, ErrNoConnection
 	}
 
 	for _, network := range logTypes {
@@ -39,5 +40,5 @@ func (c *localConn) osGuessConnnector() (*net.UnixConn, error) {
 			}
 		}
 	}
-	return nil, ErrNoConnecion
+	return nil, ErrNoConnection
 }

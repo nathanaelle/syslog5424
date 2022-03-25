@@ -72,7 +72,7 @@ func (d Dialer) Dial(network, address string, t Transport) (*Sender, <-chan erro
 	}
 
 	if c == nil {
-		return nil, nil, ErrNoConnecion
+		return nil, nil, ErrNoConnection
 	}
 
 	sndr, chanErr := NewSender(c, t, ticker)
